@@ -19,7 +19,7 @@ export interface WhatsAppConfig {
 export const whatsapp: WhatsAppConfig = {
   enabled: true,
   // TODO: reemplazar por el número real
-  phone: '51 999 999 999',
+  phone: '51 937337485 ',
   // TODO: reemplazar por el mensaje real
   message: 'Hola, me gustaría recibir más información sobre Las Bambas.',
   label: 'Escríbenos por WhatsApp',
