@@ -12,12 +12,12 @@ export default function HomePage() {
     <>
       <HeroBanner />
       <HighlightCards />
+      <TalentTestimonials />
       <AdnSection />
       {/* <ContributionBanner /> */}
       <SocialProjects />
       <LatestNews />
       <ViveExperience /> 
-      <TalentTestimonials />
     </>
   )
 }
