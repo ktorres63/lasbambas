@@ -125,7 +125,7 @@ export const mainNav: NavSection[] = [
     titleStrong: 'Nosotros',
     href: '/trabaja-con-nosotros',
     children: [
-      { label: 'DESCuBRE', href: '/trabaja-con-nosotros/descubre' },
+      // { label: 'DESCuBRE', href: '/trabaja-con-nosotros/descubre' },
       {
         label: 'Vacantes de',
         strong: 'Trabajo',
