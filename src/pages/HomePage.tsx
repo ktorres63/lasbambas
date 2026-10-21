@@ -4,7 +4,7 @@ import HighlightCards from '../components/sections/HighlightCards'
 import SocialProjects from '../components/sections/SocialProjects'
 import LatestNews from '../components/sections/LatestNews'
 import ViveExperience from '../components/sections/ViveExperience'
-// import TalentTestimonials from '../components/sections/TalentTestimonials'
+import TalentTestimonials from '../components/sections/TalentTestimonials'
 import AdnSection from '../components/sections/AdnSection'
 
 export default function HomePage() {
@@ -17,7 +17,7 @@ export default function HomePage() {
       <SocialProjects />
       <LatestNews />
       <ViveExperience /> 
-      {/* <TalentTestimonials /> */}
+      <TalentTestimonials />
     </>
   )
 }

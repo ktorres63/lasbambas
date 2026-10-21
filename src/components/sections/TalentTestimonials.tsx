@@ -31,13 +31,16 @@ export default function TalentTestimonials() {
               <img
                 src={t.image}
                 alt={t.author}
-                className="h-auto w-full max-w-[294px] shrink-0"
+                className="h-auto w-full max-w-[294px] self-start"
               />
-              <div className="relative w-full">
+              {/* Las comillas viven dentro del margen izquierdo de la columna
+                  de texto, sin invadir la foto. */}
+              <div className="relative w-full pl-[34px] sm:pl-[44px]">
                 <img
                   src="/assets/img/comillas.svg"
                   alt=""
-                  className="absolute -left-[44px] top-0 h-[31px] w-[31px]"
+                  aria-hidden="true"
+                  className="absolute left-0 top-1 h-[18px] w-[18px] sm:top-0 sm:h-[31px] sm:w-[31px]"
                 />
                 <p className="mb-[30px] text-[16px] leading-[26px] text-brand-ink">{t.quote}</p>
                 <div className="mb-[5px] text-[24px] font-black leading-[26px] text-brand-red">
