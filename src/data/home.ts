@@ -179,53 +179,59 @@ export const latestNews: NewsItem[] = [
   },
 ];
 
-export interface Testimonial {
+export interface TalentContact {
   image: string;
-  quote: string;
-  author: string;
+  name: string;
   role: string;
 }
 
-export const testimonials: Testimonial[] = [
-  {
-    image: "/assets/team/perfil-Mujer.jpg",
-    quote: "",
-    author: "Verónica Chávez Ponce",
-    role: "Ingeniera a cargo de postulacion",
-  },
-  {
-    image: "/assets/team/perfil-Mujer.jpg",
-    quote: "",
-    author: "Saida Suárez",
-    role: "Ingeniera a cargo de postulacion",
-  },
-  {
-    image: "/assets/team/perfil-hombre.avif",
-    quote: "",
-    author: "Jaime Trillo",
-    role: "Recursos Humanos",
-  },
-  {
-    image: "/assets/team/perfil-Mujer.jpg",
-    quote: "",
-    author: "Yessenia linda granados Solorzano",
-    role: "Recursos Humanos",
-  },
+export interface TalentTeam {
+  id: string;
+  /** Texto del enlace, con la parte resaltada en negrita */
+  label: string;
+  strong: string;
+  href: string;
+  contacts: TalentContact[];
+}
 
-  // {
-  //   image: '/assets/team/rolando-devera.png',
-  //   quote:
-  //     '“Trabajar en Las Bambas es una muy buena oportunidad, conoces buenos profesionales que te enseñan y comparten sus conocimientos”.',
-  //   author: 'Rolando Devera',
-  //   role: 'Desarrollo de Recursos',
-  // },
-  // {
-  //   image: '/assets/team/oscar-villalba.png',
-  //   quote:
-  //     '“Trabajar en Las Bambas es la oportunidad de contribuir a proyectos de envergadura, en un entorno multicultural, dinámico y retador”.',
-  //   author: 'Oscar Villalba',
-  //   role: 'Gestión Social',
-  // },
+/** Contactos de los equipos que acompañan la postulación */
+export const talentTeams: TalentTeam[] = [
+  {
+    id: "recursos-humanos",
+    label: "Área de ",
+    strong: "Recursos Humanos",
+    href: "/trabaja-con-nosotros/recursos-humanos",
+    contacts: [
+      {
+        image: "/assets/team/jaime-photo.jpeg",
+        name: "Jaime Trillo",
+        role: "Recursos Humanos",
+      },
+      {
+        image: "/assets/team/yesenia-photo.jpeg",
+        name: "Yessenia Linda Granados Solorzano",
+        role: "Recursos Humanos",
+      },
+    ],
+  },
+  {
+    id: "ingenieros-postulacion",
+    label: "Ingenieros a cargo de la ",
+    strong: "postulación",
+    href: "/trabaja-con-nosotros/ingenieros-a-cargo-de-la-postulacion",
+    contacts: [
+      {
+        image: "/assets/team/veronica-photo.jpeg",
+        name: "Verónica Chávez Ponce",
+        role: "Ingeniera a cargo de la postulación",
+      },
+      {
+        image: "/assets/team/saida-photo.jpeg",
+        name: "Saida Suárez",
+        role: "Ingeniera a cargo de la postulación",
+      },
+    ],
+  },
 ];
 
 export const vive = {

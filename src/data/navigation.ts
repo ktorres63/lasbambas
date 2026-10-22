@@ -131,6 +131,16 @@ export const mainNav: NavSection[] = [
         strong: 'Trabajo',
         href: '/trabaja-con-nosotros/vacantes-de-trabajo',
       },
+      {
+        label: 'Área de ',
+        strong: 'Recursos Humanos',
+        href: '/trabaja-con-nosotros/recursos-humanos',
+      },
+      {
+        label: 'Ingenieros a cargo de la ',
+        strong: 'postulación',
+        href: '/trabaja-con-nosotros/ingenieros-a-cargo-de-la-postulacion',
+      },
     ],
   },
 ]
