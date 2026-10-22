@@ -1,5 +1,5 @@
 import { Link, Navigate } from 'react-router'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { talentTeams } from '../data/home'
 
 interface TalentTeamPageProps {
@@ -14,16 +14,9 @@ export default function TalentTeamPage({ teamId }: TalentTeamPageProps) {
 
   return (
     <section className="bg-[#f4f4f4] px-[15px] pb-20 pt-[140px] lg:pt-[170px]">
-      <div className="mx-auto max-w-[1300px]">
-        <Link
-          to="/trabaja-con-nosotros/vacantes-de-trabajo"
-          className="inline-flex items-center gap-2 border-2 border-brand-ink px-4 py-2 text-[12px] font-bold uppercase tracking-[1px] text-brand-ink transition-colors duration-200 hover:bg-brand-ink hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-red"
-        >
-          <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-          Volver a vacantes
-        </Link>
+      <div className="mx-auto max-w-325">
 
-        <div className="mt-8 max-w-[760px]">
+        <div className="mt-4 max-w-[760px]">
           <p className="mb-2 text-[14px] uppercase tracking-[2px] text-brand-red">
             Trabaja con nosotros
           </p>
