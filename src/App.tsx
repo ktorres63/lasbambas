@@ -3,6 +3,7 @@ import SiteLayout from './layouts/SiteLayout'
 import HomePage from './pages/HomePage'
 import JobVacanciesPage from './pages/JobVacanciesPage'
 import TalentTeamPage from './pages/TalentTeamPage'
+import PersonnelEntryFormPage from './pages/PersonnelEntryFormPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 
 export default function App() {
@@ -24,6 +25,10 @@ export default function App() {
           <Route
             path="/trabaja-con-nosotros/ingenieros-a-cargo-de-la-postulacion"
             element={<TalentTeamPage teamId="ingenieros-postulacion" />}
+          />
+          <Route
+            path="/trabaja-con-nosotros/ficha-de-ingreso"
+            element={<PersonnelEntryFormPage />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

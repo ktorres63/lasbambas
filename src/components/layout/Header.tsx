@@ -79,7 +79,7 @@ function DesktopNav() {
                 <ul className="mt-0">
                   {section.children.map((child) => (
                     <li
-                      key={child.label}
+                      key={child.href}
                       className="relative text-[14px] text-white before:absolute before:left-0 before:top-[9px] before:h-0 before:w-0 before:border-y-4 before:border-l-4 before:border-y-transparent before:border-l-white"
                     >
                       <Link
@@ -124,7 +124,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
             </summary>
             <ul className="mt-3 space-y-2 pl-2 text-[15px]">
               {section.children.map((child) => (
-                <li key={child.label}>
+                <li key={child.href}>
                   <Link to={child.href} onClick={onClose} className="block py-1">
                     {child.label} {child.strong && <strong className="font-black">{child.strong}</strong>}
                   </Link>
