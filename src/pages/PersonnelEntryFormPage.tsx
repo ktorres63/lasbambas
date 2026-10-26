@@ -1,4 +1,3 @@
-import { Info } from 'lucide-react'
 import PersonnelEntryForm from '../components/sections/PersonnelEntryForm'
 
 export default function PersonnelEntryFormPage() {
@@ -15,18 +14,6 @@ export default function PersonnelEntryFormPage() {
           <p className="mt-4 text-[15px] leading-[24px] text-[#555]">
             Completa la información personal, académica y laboral solicitada. Los campos
             marcados con <span className="font-bold text-brand-red">*</span> son obligatorios.
-          </p>
-        </div>
-
-        <div
-          role="note"
-          className="mb-6 flex items-start gap-3 border border-[#ecd9a6] bg-[#fff8e6] p-4 text-[13px] leading-5 text-[#6b4f00]"
-        >
-          <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
-          <p>
-            <span className="font-bold">Demostración funcional.</span> Este formulario valida
-            los datos en el navegador, pero no cuenta con un servicio de envío ni almacena la
-            información.
           </p>
         </div>
 
