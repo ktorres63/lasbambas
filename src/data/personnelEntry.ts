@@ -141,7 +141,7 @@ export const personnelEntryDefaults: DefaultValues<PersonnelEntryValues> = {
   pantsSize: '',
   hasChildren: '',
   children: [],
-  emergencyContacts: [],
+  emergencyContacts: [{ ...emptyEmergencyContact }],
   previousCompanies: [
     { company: '', position: '' },
     { company: '', position: '' },

@@ -1,4 +1,4 @@
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import type { PersonnelEntryValues } from '../../../schemas/personnelEntry'
 import { currentYear } from '../../../schemas/personnelEntry'
 import { bankOptions, yesNoOptions } from '../../../data/personnelEntry'
@@ -18,11 +18,11 @@ import { fieldGridClass } from '../../form/styles'
 export default function AcademicAndBankSection() {
   const {
     register,
-    watch,
+    control,
     formState: { errors },
   } = useFormContext<PersonnelEntryValues>()
 
-  const isStudying = watch('isStudying')
+  const isStudying = useWatch({ control, name: 'isStudying' })
 
   return (
     <FormSection

@@ -1,10 +1,11 @@
 import { Plus } from 'lucide-react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import type { PersonnelEntryValues } from '../../../schemas/personnelEntry'
 import {
   afpCommissionOptions,
   countryOptions,
   emptyChild,
+  emptyEmergencyContact,
   maritalStatusOptions,
   pantsSizeOptions,
   pensionSystemOptions,
@@ -24,7 +25,6 @@ import { addButtonClass, errorClass, fieldGridClass } from '../../form/styles'
 export default function PersonalDataSection() {
   const {
     register,
-    watch,
     control,
     formState: { errors },
   } = useFormContext<PersonnelEntryValues>()
@@ -35,12 +35,19 @@ export default function PersonalDataSection() {
     remove: removeChild,
   } = useFieldArray({ control, name: 'children' })
 
-  const nationality = watch('nationality')
-  const pensionSystem = watch('pensionSystem')
-  const maritalStatus = watch('maritalStatus')
-  const hasChildren = watch('hasChildren')
+  const {
+    fields: contactFields,
+    append: appendContact,
+    remove: removeContact,
+  } = useFieldArray({ control, name: 'emergencyContacts' })
+
+  const nationality = useWatch({ control, name: 'nationality' })
+  const pensionSystem = useWatch({ control, name: 'pensionSystem' })
+  const maritalStatus = useWatch({ control, name: 'maritalStatus' })
+  const hasChildren = useWatch({ control, name: 'hasChildren' })
   const showsSpouse = maritalStatus === 'casado' || maritalStatus === 'conviviente'
   const childrenError = getArrayRootError(errors.children)
+  const contactsError = getArrayRootError(errors.emergencyContacts)
 
   return (
     <FormSection
@@ -296,7 +303,7 @@ export default function PersonalDataSection() {
           )}
         </FormSubsection>
 
-        {/* <FormSubsection
+       <FormSubsection
           title="Contactos de emergencia"
           description="Registra al menos un contacto. Puedes agregar más de uno."
         >
@@ -397,7 +404,7 @@ export default function PersonalDataSection() {
               </div>
             </fieldset>
           </div>
-        </FormSubsection> */}
+        </FormSubsection>
       </div>
     </FormSection>
   )

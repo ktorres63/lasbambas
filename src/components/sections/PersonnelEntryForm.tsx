@@ -1,7 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { ComponentType, FormEvent } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
+import type { FieldPath } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertCircle, Info, Send, Trash2 } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Info,
+  Send,
+  Trash2,
+} from 'lucide-react'
 import { personnelEntryDefaults } from '../../data/personnelEntry'
 import {
   personnelEntrySchema,
@@ -9,38 +18,227 @@ import {
 } from '../../schemas/personnelEntry'
 import Modal from '../ui/Modal'
 import PersonalDataSection from './personnel/PersonalDataSection'
-// import AcademicAndBankSection from './personnel/AcademicAndBankSection'
-// import JobSatisfactionSection from './personnel/JobSatisfactionSection'
-// import SelfAssessmentSection from './personnel/SelfAssessmentSection'
-// import AchievementsSection from './personnel/AchievementsSection'
-// import SalaryExpectationSection from './personnel/SalaryExpectationSection'
-// import EnglishLevelSection from './personnel/EnglishLevelSection'
-// import AvailabilitySection from './personnel/AvailabilitySection'
+import AcademicAndBankSection from './personnel/AcademicAndBankSection'
+import JobSatisfactionSection from './personnel/JobSatisfactionSection'
+import SelfAssessmentSection from './personnel/SelfAssessmentSection'
+import AchievementsSection from './personnel/AchievementsSection'
+import SalaryExpectationSection from './personnel/SalaryExpectationSection'
+import EnglishLevelSection from './personnel/EnglishLevelSection'
+import AvailabilitySection from './personnel/AvailabilitySection'
 import { primaryButtonClass, secondaryButtonClass } from '../form/styles'
 
 type SubmitStatus = 'idle' | 'valid' | 'invalid'
 
+interface FormStep {
+  id: string
+  title: string
+  Component: ComponentType
+  fields: FieldPath<PersonnelEntryValues>[]
+}
+
+const FORM_STEPS: FormStep[] = [
+  {
+    id: 'A',
+    title: 'Datos personales',
+    Component: PersonalDataSection,
+    fields: [
+      'fullName',
+      'dni',
+      'birthDate',
+      'nationality',
+      'nationalityOther',
+      'address',
+      'district',
+      'province',
+      'fixedPhone',
+      'mobile',
+      'pensionSystem',
+      'afpCommission',
+      'maritalStatus',
+      'spouseName',
+      'personalEmail',
+      'telradEmail',
+      'shoeSize',
+      'shirtSize',
+      'pantsSize',
+      'hasChildren',
+      'children',
+      'emergencyContacts',
+      'previousCompanies',
+    ],
+  },
+  {
+    id: 'B',
+    title: 'Antecedentes académicos y profesionales',
+    Component: AcademicAndBankSection,
+    fields: [
+      'academicTitle',
+      'academicInstitution',
+      'isStudying',
+      'currentCareer',
+      'entryYear',
+      'additionalInstitution',
+      'bankName',
+      'bankAccount',
+      'cci',
+      'ctsBank',
+    ],
+  },
+  {
+    id: 'C',
+    title: 'Aspectos de satisfacción laboral',
+    Component: JobSatisfactionSection,
+    fields: ['satisfactionMost', 'satisfactionLeast', 'satisfactionNeeds'],
+  },
+  {
+    id: 'D',
+    title: 'Autocalificación',
+    Component: SelfAssessmentSection,
+    fields: ['strengths', 'developmentAreas'],
+  },
+  {
+    id: 'E',
+    title: 'Logros y experiencia laboral',
+    Component: AchievementsSection,
+    fields: ['greatestAchievement'],
+  },
+  {
+    id: 'F',
+    title: 'Expectativa salarial',
+    Component: SalaryExpectationSection,
+    fields: ['monthlySalaryExpectation'],
+  },
+  {
+    id: 'G',
+    title: 'Nivel de inglés',
+    Component: EnglishLevelSection,
+    fields: ['englishLevel'],
+  },
+  {
+    id: 'H',
+    title: 'Disponibilidad',
+    Component: AvailabilitySection,
+    fields: ['availability', 'availableFrom'],
+  },
+]
+
+/** Comprueba si un campo o array de campos tiene un error de validación. */
+function hasFieldError(errors: unknown, field: string): boolean {
+  const value = field.split('.').reduce<unknown>((current, key) => {
+    if (!current || typeof current !== 'object') return undefined
+    return (current as Record<string, unknown>)[key]
+  }, errors)
+
+  return value !== undefined && value !== null
+}
+
 export default function PersonnelEntryForm() {
   const [confirmClearOpen, setConfirmClearOpen] = useState(false)
   const [status, setStatus] = useState<SubmitStatus>('idle')
+  const [currentStep, setCurrentStep] = useState(0)
+  const [pendingFocus, setPendingFocus] =
+    useState<FieldPath<PersonnelEntryValues> | null>(null)
+  const [scrollRequest, setScrollRequest] = useState(0)
+  const stepTopRef = useRef<HTMLDivElement>(null)
 
   const methods = useForm<PersonnelEntryValues>({
     resolver: zodResolver(personnelEntrySchema),
     defaultValues: personnelEntryDefaults,
     mode: 'onTouched',
+    shouldFocusError: false,
   })
 
-  const { handleSubmit, reset } = methods
+  const { handleSubmit, reset, trigger, setFocus } = methods
+  const step = FORM_STEPS[currentStep]
+  const isFirstStep = currentStep === 0
+  const isLastStep = currentStep === FORM_STEPS.length - 1
+
+  useEffect(() => {
+    if (!pendingFocus) return
+
+    const timer = window.setTimeout(() => {
+      setFocus(pendingFocus)
+      setPendingFocus(null)
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [pendingFocus, setFocus])
+
+  useEffect(() => {
+    if (!scrollRequest) return
+
+    stepTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [scrollRequest])
+
+  const goToStep = (index: number, focusField?: FieldPath<PersonnelEntryValues>) => {
+    setCurrentStep(index)
+    setPendingFocus(focusField ?? null)
+    setScrollRequest((request) => request + 1)
+  }
+
+  const goNext = async () => {
+    const fields = step.fields
+    const isValidStep = await trigger(fields)
+
+    if (!isValidStep) {
+      setStatus('invalid')
+      const firstError = fields.find((field) =>
+        methods.getFieldState(field).invalid,
+      )
+      setPendingFocus(firstError ?? null)
+      setScrollRequest((request) => request + 1)
+
+      if (firstError) {
+        setFocus(firstError)
+      }
+      return
+    }
+
+    setStatus('idle')
+    goToStep(Math.min(currentStep + 1, FORM_STEPS.length - 1))
+  }
+
+  const goPrevious = () => {
+    setStatus('idle')
+    goToStep(Math.max(currentStep - 1, 0))
+  }
 
   // No se recibe ni se registra el objeto de datos: no existe un servicio de envío.
   const submitForm = handleSubmit(
     () => setStatus('valid'),
-    () => setStatus('invalid'),
+    (formErrors) => {
+      setStatus('invalid')
+
+      const errorStepIndex = FORM_STEPS.findIndex((formStep) =>
+        formStep.fields.some((field) => hasFieldError(formErrors, field)),
+      )
+
+      if (errorStepIndex === -1) return
+
+      const errorStep = FORM_STEPS[errorStepIndex]
+      const firstError = errorStep.fields.find((field) =>
+        hasFieldError(formErrors, field),
+      )
+      goToStep(errorStepIndex, firstError)
+    },
   )
+
+  const onFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    if (isLastStep) {
+      void submitForm(event)
+      return
+    }
+
+    event.preventDefault()
+    void goNext()
+  }
 
   const confirmClear = () => {
     reset()
     setStatus('idle')
+    setCurrentStep(0)
+    setPendingFocus(null)
+    setScrollRequest((request) => request + 1)
     setConfirmClearOpen(false)
   }
 
@@ -75,28 +273,64 @@ export default function PersonnelEntryForm() {
 
         <form
           noValidate
-          onSubmit={submitForm}
+          onSubmit={onFormSubmit}
           onChange={() => setStatus('idle')}
           className="space-y-5"
         >
-          <PersonalDataSection />
-          {/* <AcademicAndBankSection />
-          <JobSatisfactionSection />
-          <SelfAssessmentSection />
-          <AchievementsSection />
-          <SalaryExpectationSection />
-          <EnglishLevelSection />
-          <AvailabilitySection /> */}
+          <div ref={stepTopRef} className="scroll-mt-28 space-y-5">
+            <nav
+              aria-label="Progreso del formulario"
+              className="border border-[#e3e3e3] bg-white p-4 sm:p-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[12px] font-bold uppercase tracking-[1px] text-brand-red">
+                  Paso {currentStep + 1} de {FORM_STEPS.length}
+                </p>
+                <p className="text-[13px] font-bold text-brand-ink">{step.title}</p>
+              </div>
 
-          <div className="border border-[#e3e3e3] bg-white p-5 sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="max-w-[620px] text-[12px] leading-5 text-[#666]">
-                Los campos marcados con <span className="font-bold text-brand-red">*</span> son
-                obligatorios. Las validaciones de este formulario no sustituyen la validación
-                del servidor.
+              <ol className="mt-3 flex gap-1.5">
+                {FORM_STEPS.map((formStep, index) => {
+                  const isCurrent = index === currentStep
+                  const isComplete = index < currentStep
+
+                  return (
+                    <li
+                      key={formStep.id}
+                      className="flex-1"
+                      aria-current={isCurrent ? 'step' : undefined}
+                    >
+                      <span
+                        className={`block h-1.5 ${
+                          isCurrent || isComplete ? 'bg-brand-red' : 'bg-[#e0e0e0]'
+                        }`}
+                      />
+                      <span className="sr-only">
+                        Paso {index + 1}, {formStep.title}
+                        {isComplete ? ', completado' : isCurrent ? ', actual' : ''}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ol>
+
+              <p className="sr-only" role="status" aria-live="polite">
+                Paso {currentStep + 1} de {FORM_STEPS.length}: {step.title}
               </p>
+            </nav>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
+            {FORM_STEPS.map((formStep, index) => {
+              const Section = formStep.Component
+
+              return (
+                <div key={formStep.id} hidden={index !== currentStep}>
+                  <Section />
+                </div>
+              )
+            })}
+
+            <div className="border border-[#e3e3e3] bg-white p-5 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
                   onClick={() => setConfirmClearOpen(true)}
@@ -105,11 +339,48 @@ export default function PersonnelEntryForm() {
                   <Trash2 aria-hidden="true" className="h-4 w-4" />
                   Limpiar formulario
                 </button>
-                <button type="submit" className={primaryButtonClass}>
-                  <Send aria-hidden="true" className="h-4 w-4" />
-                  Enviar formulario
-                </button>
+
+                <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                  {!isFirstStep && (
+                    <button
+                      type="button"
+                      onClick={goPrevious}
+                      className={secondaryButtonClass}
+                    >
+                      <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+                      Anterior
+                    </button>
+                  )}
+
+                  {isLastStep ? (
+                    <button type="submit" className={primaryButtonClass}>
+                      <Send aria-hidden="true" className="h-4 w-4" />
+                      Enviar formulario
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void goNext()}
+                      className={primaryButtonClass}
+                    >
+                      Siguiente
+                      <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </div>
+
+              <p className="mt-4 border-t border-[#eee] pt-4 text-[12px] leading-5 text-[#666]">
+                Paso {currentStep + 1} de {FORM_STEPS.length}. Los campos marcados con{' '}
+                <span className="font-bold text-brand-red">*</span> son obligatorios. Las
+                validaciones de este formulario no sustituyen la validación del servidor.
+              </p>
+
+              <p className="mt-2 text-[12px] leading-5 text-[#777]">
+                Demostración funcional: no existe una integración de envío. Los datos
+                permanecen únicamente en esta página mientras la completas y no se guardan en
+                el navegador.
+              </p>
             </div>
           </div>
         </form>

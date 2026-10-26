@@ -140,7 +140,9 @@ export const personnelEntrySchema = z
     pantsSize: requiredText('Selecciona la talla de pantalón.'),
     hasChildren: requiredText('Indica si tienes hijos.'),
     children: z.array(childSchema),
-    emergencyContacts: z.array(emergencyContactSchema),
+    emergencyContacts: z
+      .array(emergencyContactSchema)
+      .min(1, 'Agrega al menos un contacto de emergencia.'),
     previousCompanies: z.array(previousCompanySchema).length(2),
 
     // B. Antecedentes académicos y profesionales

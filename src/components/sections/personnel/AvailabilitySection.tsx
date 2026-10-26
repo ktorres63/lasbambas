@@ -1,4 +1,4 @@
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import type { PersonnelEntryValues } from '../../../schemas/personnelEntry'
 import { availabilityOptions } from '../../../data/personnelEntry'
 import FormSection from '../../form/FormSection'
@@ -9,11 +9,11 @@ import { fieldGridClass } from '../../form/styles'
 export default function AvailabilitySection() {
   const {
     register,
-    watch,
+    control,
     formState: { errors },
   } = useFormContext<PersonnelEntryValues>()
 
-  const availability = watch('availability')
+  const availability = useWatch({ control, name: 'availability' })
 
   return (
     <FormSection
