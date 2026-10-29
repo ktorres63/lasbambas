@@ -26,8 +26,19 @@ import SalaryExpectationSection from './personnel/SalaryExpectationSection'
 import EnglishLevelSection from './personnel/EnglishLevelSection'
 import AvailabilitySection from './personnel/AvailabilitySection'
 import { primaryButtonClass, secondaryButtonClass } from '../form/styles'
+import { submitPersonnelEntry } from '../../services/googleSheets'
 
-type SubmitStatus = 'idle' | 'valid' | 'invalid'
+type SubmitStatus =
+  | 'idle'
+  | 'invalid'
+  | 'sending'
+  | 'sent'
+  | 'unverified'
+  | 'error'
+  | 'not-configured'
+
+/** Clases extra para deshabilitar los botones mientras se envía. */
+const disabledClass = 'disabled:cursor-not-allowed disabled:opacity-50'
 
 interface FormStep {
   id: string
@@ -135,6 +146,7 @@ function hasFieldError(errors: unknown, field: string): boolean {
 export default function PersonnelEntryForm() {
   const [confirmClearOpen, setConfirmClearOpen] = useState(false)
   const [status, setStatus] = useState<SubmitStatus>('idle')
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState(0)
   const [pendingFocus, setPendingFocus] =
     useState<FieldPath<PersonnelEntryValues> | null>(null)
@@ -203,9 +215,38 @@ export default function PersonnelEntryForm() {
     goToStep(Math.max(currentStep - 1, 0))
   }
 
-  // No se recibe ni se registra el objeto de datos: no existe un servicio de envío.
+  const isSending = status === 'sending'
+
+  // Envía la ficha al Web App de Google Apps Script (Google Sheets).
   const submitForm = handleSubmit(
-    () => setStatus('valid'),
+    async (values) => {
+      setSubmitError(null)
+      setStatus('sending')
+
+      const result = await submitPersonnelEntry(values)
+
+      if (result.status === 'success') {
+        setStatus('sent')
+        reset()
+        setCurrentStep(0)
+        return
+      }
+
+      if (result.status === 'unverified') {
+        setStatus('unverified')
+        reset()
+        setCurrentStep(0)
+        return
+      }
+
+      if (result.status === 'not-configured') {
+        setStatus('not-configured')
+        return
+      }
+
+      setSubmitError(result.message)
+      setStatus('error')
+    },
     (formErrors) => {
       setStatus('invalid')
 
@@ -258,15 +299,63 @@ export default function PersonnelEntryForm() {
           </div>
         )}
 
-        {status === 'valid' && (
+        {status === 'sent' && (
           <div
             role="status"
             className="flex items-start gap-3 border border-[#b9d3e6] bg-[#f1f7fb] p-4 text-[13px] leading-5 text-[#174a68]"
           >
             <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
             <p>
-              El formulario se validó correctamente. Esta es una demostración: los datos no
-              se envían ni se almacenan en ningún servidor.
+              ¡Gracias! Tu ficha de ingreso se envió correctamente y quedó registrada.
+            </p>
+          </div>
+        )}
+
+        {status === 'sending' && (
+          <div
+            role="status"
+            className="flex items-start gap-3 border border-[#e3e3e3] bg-[#fafafa] p-4 text-[13px] leading-5 text-[#555]"
+          >
+            <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+            <p>Enviando tu ficha de ingreso, no cierres esta página…</p>
+          </div>
+        )}
+
+        {status === 'unverified' && (
+          <div
+            role="status"
+            className="flex items-start gap-3 border border-[#e7d7a8] bg-[#fdf9ec] p-4 text-[13px] leading-5 text-[#7a5c12]"
+          >
+            <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+            <p>
+              Tu envío se realizó, pero el navegador no pudo confirmar la respuesta del
+              servicio. Si no recibes confirmación por correo, vuelve a enviar la ficha.
+            </p>
+          </div>
+        )}
+
+        {status === 'not-configured' && (
+          <div
+            role="alert"
+            className="flex items-start gap-3 border border-[#e7b4b4] bg-[#fdf2f2] p-4 text-[13px] leading-5 text-[#8a1c15]"
+          >
+            <AlertCircle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+            <p>
+              El envío no está configurado: falta definir la URL del servicio en el
+              archivo <code className="font-mono">.env</code>. Tu información no se envió.
+            </p>
+          </div>
+        )}
+
+        {status === 'error' && (
+          <div
+            role="alert"
+            className="flex items-start gap-3 border border-[#e7b4b4] bg-[#fdf2f2] p-4 text-[13px] leading-5 text-[#8a1c15]"
+          >
+            <AlertCircle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+            <p>
+              {submitError ?? 'No se pudo enviar la ficha.'} Tus datos siguen en el
+              formulario, puedes intentarlo de nuevo.
             </p>
           </div>
         )}
@@ -334,7 +423,8 @@ export default function PersonnelEntryForm() {
                 <button
                   type="button"
                   onClick={() => setConfirmClearOpen(true)}
-                  className={secondaryButtonClass}
+                  className={`${secondaryButtonClass} ${disabledClass}`}
+                  disabled={isSending}
                 >
                   <Trash2 aria-hidden="true" className="h-4 w-4" />
                   Limpiar formulario
@@ -345,7 +435,8 @@ export default function PersonnelEntryForm() {
                     <button
                       type="button"
                       onClick={goPrevious}
-                      className={secondaryButtonClass}
+                      className={`${secondaryButtonClass} ${disabledClass}`}
+                      disabled={isSending}
                     >
                       <ArrowLeft aria-hidden="true" className="h-4 w-4" />
                       Anterior
@@ -353,15 +444,20 @@ export default function PersonnelEntryForm() {
                   )}
 
                   {isLastStep ? (
-                    <button type="submit" className={primaryButtonClass}>
+                    <button
+                      type="submit"
+                      className={`${primaryButtonClass} ${disabledClass}`}
+                      disabled={isSending}
+                    >
                       <Send aria-hidden="true" className="h-4 w-4" />
-                      Enviar formulario
+                      {isSending ? 'Enviando…' : 'Enviar formulario'}
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={() => void goNext()}
-                      className={primaryButtonClass}
+                      className={`${primaryButtonClass} ${disabledClass}`}
+                      disabled={isSending}
                     >
                       Siguiente
                       <ArrowRight aria-hidden="true" className="h-4 w-4" />
@@ -372,14 +468,13 @@ export default function PersonnelEntryForm() {
 
               <p className="mt-4 border-t border-[#eee] pt-4 text-[12px] leading-5 text-[#666]">
                 Paso {currentStep + 1} de {FORM_STEPS.length}. Los campos marcados con{' '}
-                <span className="font-bold text-brand-red">*</span> son obligatorios. Las
-                validaciones de este formulario no sustituyen la validación del servidor.
+                <span className="font-bold text-brand-red">*</span> son obligatorios. La
+                validación de este formulario se ejecuta en el navegador.
               </p>
 
               <p className="mt-2 text-[12px] leading-5 text-[#777]">
-                Demostración funcional: no existe una integración de envío. Los datos
-                permanecen únicamente en esta página mientras la completas y no se guardan en
-                el navegador.
+                Al enviar la ficha, tus datos se registran en una hoja de cálculo de Google
+                administrada por la empresa.
               </p>
             </div>
           </div>
