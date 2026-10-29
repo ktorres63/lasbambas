@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ComponentType, FormEvent } from 'react'
+import type { ComponentType, FormEvent, KeyboardEvent, ReactNode } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import type { FieldPath } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,6 +11,7 @@ import {
   Send,
   Trash2,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { personnelEntryDefaults } from '../../data/personnelEntry'
 import {
   personnelEntrySchema,
@@ -37,8 +38,102 @@ type SubmitStatus =
   | 'error'
   | 'not-configured'
 
+interface SubmissionState {
+  status: SubmitStatus
+  error: string | null
+}
+
+interface StepRequest {
+  id: number
+  focusField: FieldPath<PersonnelEntryValues> | null
+}
+
 /** Clases extra para deshabilitar los botones mientras se envía. */
 const disabledClass = 'disabled:cursor-not-allowed disabled:opacity-50'
+
+const noticeClass = {
+  error: 'border-[#e7b4b4] bg-[#fdf2f2] text-[#8a1c15]',
+  info: 'border-[#b9d3e6] bg-[#f1f7fb] text-[#174a68]',
+  neutral: 'border-[#e3e3e3] bg-[#fafafa] text-[#555]',
+  warning: 'border-[#e7d7a8] bg-[#fdf9ec] text-[#7a5c12]',
+} as const
+
+interface StatusNoticeConfig {
+  role: 'alert' | 'status'
+  className: string
+  Icon: LucideIcon
+  message?: ReactNode
+}
+
+const STATUS_NOTICES: Record<Exclude<SubmitStatus, 'idle'>, StatusNoticeConfig> = {
+  invalid: {
+    role: 'alert',
+    className: noticeClass.error,
+    Icon: AlertCircle,
+    message:
+      'Revisa los campos marcados con un mensaje de error antes de continuar. Las validaciones se ejecutan en el navegador.',
+  },
+  sent: {
+    role: 'status',
+    className: noticeClass.info,
+    Icon: Info,
+    message: '¡Gracias! Tu ficha de ingreso se envió correctamente y quedó registrada.',
+  },
+  sending: {
+    role: 'status',
+    className: noticeClass.neutral,
+    Icon: Info,
+    message: 'Enviando tu ficha de ingreso, no cierres esta página…',
+  },
+  unverified: {
+    role: 'status',
+    className: noticeClass.warning,
+    Icon: Info,
+    message:
+      'Tu envío se realizó, pero el navegador no pudo confirmar la respuesta del servicio. Si no recibes confirmación por correo, vuelve a enviar la ficha.',
+  },
+  'not-configured': {
+    role: 'alert',
+    className: noticeClass.error,
+    Icon: AlertCircle,
+    message: (
+      <>
+        El envío no está configurado: falta definir la URL del servicio en el archivo{' '}
+        <code className="font-mono">.env</code>. Tu información no se envió.
+      </>
+    ),
+  },
+  error: {
+    role: 'alert',
+    className: noticeClass.error,
+    Icon: AlertCircle,
+  },
+}
+
+function FormStatusNotice({ status, error }: SubmissionState) {
+  if (status === 'idle') return null
+
+  const { role, className, Icon, message } = STATUS_NOTICES[status]
+
+  return (
+    <div
+      role={role}
+      className={`flex items-start gap-3 border p-4 text-[13px] leading-5 ${className}`}
+    >
+      <Icon aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+      <p>
+        {status === 'error' ? (
+          <>
+            {error ?? 'No se pudo enviar la ficha.'} Tus datos siguen en el formulario,
+            puedes intentarlo de nuevo.
+          </>
+        ) : (
+          message
+        )}
+      </p>
+    </div>
+  )
+}
 
 interface FormStep {
   id: string
@@ -133,6 +228,16 @@ const FORM_STEPS: FormStep[] = [
   },
 ]
 
+const LAST_STEP_INDEX = FORM_STEPS.length - 1
+const ENTER_ALLOWED_INPUT_TYPES = new Set([
+  'button',
+  'submit',
+  'reset',
+  'checkbox',
+  'radio',
+  'file',
+])
+
 /** Comprueba si un campo o array de campos tiene un error de validación. */
 function hasFieldError(errors: unknown, field: string): boolean {
   const value = field.split('.').reduce<unknown>((current, key) => {
@@ -143,15 +248,78 @@ function hasFieldError(errors: unknown, field: string): boolean {
   return value !== undefined && value !== null
 }
 
+interface StepProgressProps {
+  currentStep: number
+  isSending: boolean
+  onStepChange: (index: number) => void
+}
+
+function StepProgress({ currentStep, isSending, onStepChange }: StepProgressProps) {
+  const step = FORM_STEPS[currentStep]
+
+  return (
+    <nav
+      aria-label="Progreso del formulario"
+      className="border border-[#e3e3e3] bg-white p-4 sm:p-5"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[12px] font-bold uppercase tracking-[1px] text-brand-red">
+          Paso {currentStep + 1} de {FORM_STEPS.length}
+        </p>
+        <p className="text-[13px] font-bold text-brand-ink">{step.title}</p>
+      </div>
+
+      <ol className="mt-3 flex gap-1.5">
+        {FORM_STEPS.map((formStep, index) => {
+          const isCurrent = index === currentStep
+          const isComplete = index < currentStep
+
+          return (
+            <li key={formStep.id} className="flex-1">
+              <button
+                type="button"
+                onClick={() => onStepChange(index)}
+                disabled={index > currentStep || isSending}
+                aria-current={isCurrent ? 'step' : undefined}
+                className="group block w-full pt-1 text-left disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-red"
+              >
+                <span
+                  className={`block h-1.5 transition-colors duration-200 ${
+                    isCurrent || isComplete ? 'bg-brand-red' : 'bg-[#e0e0e0]'
+                  } ${isComplete ? 'group-hover:bg-brand-red-dark' : ''}`}
+                />
+                <span className="sr-only">
+                  Paso {index + 1}, {formStep.title}
+                  {isComplete ? ', completado' : isCurrent ? ', actual' : ''}
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+
+      <p className="sr-only" role="status" aria-live="polite">
+        Paso {currentStep + 1} de {FORM_STEPS.length}: {step.title}
+      </p>
+    </nav>
+  )
+}
+
 export default function PersonnelEntryForm() {
   const [confirmClearOpen, setConfirmClearOpen] = useState(false)
-  const [status, setStatus] = useState<SubmitStatus>('idle')
-  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submission, setSubmission] = useState<SubmissionState>({
+    status: 'idle',
+    error: null,
+  })
   const [currentStep, setCurrentStep] = useState(0)
-  const [pendingFocus, setPendingFocus] =
-    useState<FieldPath<PersonnelEntryValues> | null>(null)
-  const [scrollRequest, setScrollRequest] = useState(0)
+  const [stepRequest, setStepRequest] = useState<StepRequest>({
+    id: 0,
+    focusField: null,
+  })
+  const [formScrollRequest, setFormScrollRequest] = useState(0)
+  const [formVersion, setFormVersion] = useState(0)
   const stepTopRef = useRef<HTMLDivElement>(null)
+  const formTopRef = useRef<HTMLDivElement>(null)
 
   const methods = useForm<PersonnelEntryValues>({
     resolver: zodResolver(personnelEntrySchema),
@@ -160,95 +328,121 @@ export default function PersonnelEntryForm() {
     shouldFocusError: false,
   })
 
-  const { handleSubmit, reset, trigger, setFocus } = methods
+  const {
+    handleSubmit,
+    reset,
+    trigger,
+    setFocus,
+    getFieldState,
+    formState: { isDirty },
+  } = methods
+  const { status, error } = submission
   const step = FORM_STEPS[currentStep]
   const isFirstStep = currentStep === 0
-  const isLastStep = currentStep === FORM_STEPS.length - 1
+  const isLastStep = currentStep === LAST_STEP_INDEX
+  const isSending = status === 'sending'
+  const isSent = status === 'sent'
+
+  const updateStatus = (nextStatus: SubmitStatus) => {
+    setSubmission((current) =>
+      current.status === nextStatus && current.error === null
+        ? current
+        : { status: nextStatus, error: null },
+    )
+  }
+
+  const requestStepScroll = (focusField?: FieldPath<PersonnelEntryValues>) => {
+    setStepRequest((current) => ({
+      id: current.id + 1,
+      focusField: focusField ?? null,
+    }))
+  }
+
+  const scrollToForm = () => {
+    setFormScrollRequest((request) => request + 1)
+  }
 
   useEffect(() => {
-    if (!pendingFocus) return
-
-    const timer = window.setTimeout(() => {
-      setFocus(pendingFocus)
-      setPendingFocus(null)
-    }, 0)
-
-    return () => window.clearTimeout(timer)
-  }, [pendingFocus, setFocus])
-
-  useEffect(() => {
-    if (!scrollRequest) return
+    if (!stepRequest.id) return
 
     stepTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [scrollRequest])
+
+    // Lleva el foco al título del paso visible para que se anuncie el cambio.
+    const heading = stepTopRef.current?.querySelector<HTMLElement>(
+      '[data-step]:not([hidden]) h2',
+    )
+    heading?.focus({ preventScroll: true })
+
+    const { focusField } = stepRequest
+    if (!focusField) return
+
+    const timer = window.setTimeout(() => setFocus(focusField), 0)
+    return () => window.clearTimeout(timer)
+  }, [stepRequest, setFocus])
+
+  useEffect(() => {
+    if (!formScrollRequest) return
+    formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [formScrollRequest])
 
   const goToStep = (index: number, focusField?: FieldPath<PersonnelEntryValues>) => {
     setCurrentStep(index)
-    setPendingFocus(focusField ?? null)
-    setScrollRequest((request) => request + 1)
+    requestStepScroll(focusField)
   }
 
   const goNext = async () => {
-    const fields = step.fields
-    const isValidStep = await trigger(fields)
+    const isValidStep = await trigger(step.fields)
 
     if (!isValidStep) {
-      setStatus('invalid')
-      const firstError = fields.find((field) =>
-        methods.getFieldState(field).invalid,
-      )
-      setPendingFocus(firstError ?? null)
-      setScrollRequest((request) => request + 1)
+      updateStatus('invalid')
+      const firstError = step.fields.find((field) => getFieldState(field).invalid)
+      goToStep(currentStep, firstError)
 
-      if (firstError) {
-        setFocus(firstError)
-      }
+      if (firstError) setFocus(firstError)
       return
     }
 
-    setStatus('idle')
-    goToStep(Math.min(currentStep + 1, FORM_STEPS.length - 1))
+    updateStatus('idle')
+    goToStep(Math.min(currentStep + 1, LAST_STEP_INDEX))
   }
 
   const goPrevious = () => {
-    setStatus('idle')
+    updateStatus('idle')
     goToStep(Math.max(currentStep - 1, 0))
   }
 
-  const isSending = status === 'sending'
+  const resetForm = () => {
+    reset()
+    setCurrentStep(0)
+    // Remonta los campos para que los contadores y las listas vuelvan a cero.
+    setFormVersion((version) => version + 1)
+  }
 
   // Envía la ficha al Web App de Google Apps Script (Google Sheets).
   const submitForm = handleSubmit(
     async (values) => {
-      setSubmitError(null)
-      setStatus('sending')
-
+      updateStatus('sending')
       const result = await submitPersonnelEntry(values)
 
-      if (result.status === 'success') {
-        setStatus('sent')
-        reset()
-        setCurrentStep(0)
-        return
+      switch (result.status) {
+        case 'success':
+          updateStatus('sent')
+          resetForm()
+          scrollToForm()
+          return
+        case 'unverified':
+          updateStatus('unverified')
+          scrollToForm()
+          return
+        case 'not-configured':
+          updateStatus('not-configured')
+          return
+        case 'error':
+          setSubmission({ status: 'error', error: result.message })
       }
-
-      if (result.status === 'unverified') {
-        setStatus('unverified')
-        reset()
-        setCurrentStep(0)
-        return
-      }
-
-      if (result.status === 'not-configured') {
-        setStatus('not-configured')
-        return
-      }
-
-      setSubmitError(result.message)
-      setStatus('error')
     },
     (formErrors) => {
-      setStatus('invalid')
+      updateStatus('invalid')
 
       const errorStepIndex = FORM_STEPS.findIndex((formStep) =>
         formStep.fields.some((field) => hasFieldError(formErrors, field)),
@@ -274,145 +468,63 @@ export default function PersonnelEntryForm() {
     void goNext()
   }
 
+  /**
+   * Evita el envío implícito del navegador: pulsar Enter dentro de un campo de
+   * texto (o de la fecha) enviaba el formulario completo desde cualquier paso.
+   * Ahora solo el botón "Enviar formulario" lo envía; Enter sobre un botón
+   * sigue funcionando normalmente.
+   */
+  const onFormKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (event.key !== 'Enter') return
+
+    const target = event.target
+    if (
+      !(target instanceof HTMLInputElement) ||
+      ENTER_ALLOWED_INPUT_TYPES.has(target.type)
+    ) {
+      return
+    }
+
+    event.preventDefault()
+  }
+
+  /** Mantiene el aviso durante el envío y lo retira al comenzar una nueva ficha. */
+  const onFormChange = () => {
+    if (isSending) return
+    updateStatus('idle')
+  }
+
   const confirmClear = () => {
-    reset()
-    setStatus('idle')
-    setCurrentStep(0)
-    setPendingFocus(null)
-    setScrollRequest((request) => request + 1)
+    updateStatus('idle')
+    resetForm()
+    requestStepScroll()
     setConfirmClearOpen(false)
   }
 
   return (
     <FormProvider {...methods}>
-      <div className="space-y-5">
-        {status === 'invalid' && (
-          <div
-            role="alert"
-            className="flex items-start gap-3 border border-[#e7b4b4] bg-[#fdf2f2] p-4 text-[13px] leading-5 text-[#8a1c15]"
-          >
-            <AlertCircle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>
-              Revisa los campos marcados con un mensaje de error antes de continuar. Las
-              validaciones se ejecutan en el navegador.
-            </p>
-          </div>
-        )}
-
-        {status === 'sent' && (
-          <div
-            role="status"
-            className="flex items-start gap-3 border border-[#b9d3e6] bg-[#f1f7fb] p-4 text-[13px] leading-5 text-[#174a68]"
-          >
-            <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>
-              ¡Gracias! Tu ficha de ingreso se envió correctamente y quedó registrada.
-            </p>
-          </div>
-        )}
-
-        {status === 'sending' && (
-          <div
-            role="status"
-            className="flex items-start gap-3 border border-[#e3e3e3] bg-[#fafafa] p-4 text-[13px] leading-5 text-[#555]"
-          >
-            <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>Enviando tu ficha de ingreso, no cierres esta página…</p>
-          </div>
-        )}
-
-        {status === 'unverified' && (
-          <div
-            role="status"
-            className="flex items-start gap-3 border border-[#e7d7a8] bg-[#fdf9ec] p-4 text-[13px] leading-5 text-[#7a5c12]"
-          >
-            <Info aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>
-              Tu envío se realizó, pero el navegador no pudo confirmar la respuesta del
-              servicio. Si no recibes confirmación por correo, vuelve a enviar la ficha.
-            </p>
-          </div>
-        )}
-
-        {status === 'not-configured' && (
-          <div
-            role="alert"
-            className="flex items-start gap-3 border border-[#e7b4b4] bg-[#fdf2f2] p-4 text-[13px] leading-5 text-[#8a1c15]"
-          >
-            <AlertCircle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>
-              El envío no está configurado: falta definir la URL del servicio en el
-              archivo <code className="font-mono">.env</code>. Tu información no se envió.
-            </p>
-          </div>
-        )}
-
-        {status === 'error' && (
-          <div
-            role="alert"
-            className="flex items-start gap-3 border border-[#e7b4b4] bg-[#fdf2f2] p-4 text-[13px] leading-5 text-[#8a1c15]"
-          >
-            <AlertCircle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>
-              {submitError ?? 'No se pudo enviar la ficha.'} Tus datos siguen en el
-              formulario, puedes intentarlo de nuevo.
-            </p>
-          </div>
-        )}
+      <div key={formVersion} ref={formTopRef} className="scroll-mt-28 space-y-5">
+        <FormStatusNotice status={status} error={error} />
 
         <form
           noValidate
           onSubmit={onFormSubmit}
-          onChange={() => setStatus('idle')}
+          onChange={onFormChange}
+          onKeyDown={onFormKeyDown}
           className="space-y-5"
         >
           <div ref={stepTopRef} className="scroll-mt-28 space-y-5">
-            <nav
-              aria-label="Progreso del formulario"
-              className="border border-[#e3e3e3] bg-white p-4 sm:p-5"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[12px] font-bold uppercase tracking-[1px] text-brand-red">
-                  Paso {currentStep + 1} de {FORM_STEPS.length}
-                </p>
-                <p className="text-[13px] font-bold text-brand-ink">{step.title}</p>
-              </div>
-
-              <ol className="mt-3 flex gap-1.5">
-                {FORM_STEPS.map((formStep, index) => {
-                  const isCurrent = index === currentStep
-                  const isComplete = index < currentStep
-
-                  return (
-                    <li
-                      key={formStep.id}
-                      className="flex-1"
-                      aria-current={isCurrent ? 'step' : undefined}
-                    >
-                      <span
-                        className={`block h-1.5 ${
-                          isCurrent || isComplete ? 'bg-brand-red' : 'bg-[#e0e0e0]'
-                        }`}
-                      />
-                      <span className="sr-only">
-                        Paso {index + 1}, {formStep.title}
-                        {isComplete ? ', completado' : isCurrent ? ', actual' : ''}
-                      </span>
-                    </li>
-                  )
-                })}
-              </ol>
-
-              <p className="sr-only" role="status" aria-live="polite">
-                Paso {currentStep + 1} de {FORM_STEPS.length}: {step.title}
-              </p>
-            </nav>
+            <StepProgress
+              currentStep={currentStep}
+              isSending={isSending}
+              onStepChange={goToStep}
+            />
 
             {FORM_STEPS.map((formStep, index) => {
               const Section = formStep.Component
 
               return (
-                <div key={formStep.id} hidden={index !== currentStep}>
+                <div key={formStep.id} data-step hidden={index !== currentStep}>
                   <Section />
                 </div>
               )
@@ -424,7 +536,7 @@ export default function PersonnelEntryForm() {
                   type="button"
                   onClick={() => setConfirmClearOpen(true)}
                   className={`${secondaryButtonClass} ${disabledClass}`}
-                  disabled={isSending}
+                  disabled={isSending || !isDirty}
                 >
                   <Trash2 aria-hidden="true" className="h-4 w-4" />
                   Limpiar formulario
@@ -445,17 +557,23 @@ export default function PersonnelEntryForm() {
 
                   {isLastStep ? (
                     <button
+                      key="submit"
                       type="submit"
                       className={`${primaryButtonClass} ${disabledClass}`}
-                      disabled={isSending}
+                      disabled={isSending || isSent}
                     >
                       <Send aria-hidden="true" className="h-4 w-4" />
-                      {isSending ? 'Enviando…' : 'Enviar formulario'}
+                      {isSending ? 'Enviando…' : isSent ? 'Enviado' : 'Enviar formulario'}
                     </button>
                   ) : (
                     <button
+                      key="next"
                       type="button"
-                      onClick={() => void goNext()}
+                      onClick={(event) => {
+                        // Evita que el cambio al último paso convierta este clic en un envío.
+                        event.preventDefault()
+                        void goNext()
+                      }}
                       className={`${primaryButtonClass} ${disabledClass}`}
                       disabled={isSending}
                     >

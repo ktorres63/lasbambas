@@ -169,7 +169,6 @@ export default function PersonalDataSection() {
           <div className={fieldGridClass}>
             <RadioGroupField
               legend="Sistema previsional"
-              required
               registration={register('pensionSystem')}
               options={pensionSystemOptions}
               error={errors.pensionSystem?.message}
@@ -303,7 +302,7 @@ export default function PersonalDataSection() {
           )}
         </FormSubsection>
 
-       <FormSubsection
+        <FormSubsection
           title="Contactos de emergencia"
           description="Registra al menos un contacto. Puedes agregar más de uno."
         >
