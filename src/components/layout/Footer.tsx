@@ -53,6 +53,7 @@ const columns: FooterColumn[] = [
       { label: 'Contáctenos', href: '/contactenos' },
       { label: 'Trabaja con Nosotros', href: '/trabaja-con-nosotros' },
       { label: 'Proveedores', href: '/proveedores' },
+      { label: 'Iniciar sesión', href: '/login' },
     ],
   },
 ]

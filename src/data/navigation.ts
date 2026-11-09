@@ -25,7 +25,7 @@ export const topBar: TopBarLink[] = [
   { label: 'Proveedores', href: '/proveedores' },
   { label: 'Consultas y reclamos', href: '/consultas-y-reclamos' },
   { label: 'Línea ética', href: '/linea-etica' },
-  { label: 'AAA', href: '#' },
+  { label: 'Iniciar sesión', href: '/login' },
 ]
 
 /** Menú principal del home (español) */

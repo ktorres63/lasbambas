@@ -2,13 +2,38 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Search, X } from 'lucide-react'
 import { mainNav, topBar } from '../../data/navigation'
+import { AUTH_CHANGE_EVENT, getStoredSession } from '../../services/auth'
 
-function TopBar() {
+function useIsAuthenticated(): boolean {
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => getStoredSession() !== null,
+  )
+
+  useEffect(() => {
+    const syncAuth = () => setIsAuthenticated(getStoredSession() !== null)
+    window.addEventListener(AUTH_CHANGE_EVENT, syncAuth)
+    window.addEventListener('storage', syncAuth)
+    return () => {
+      window.removeEventListener(AUTH_CHANGE_EVENT, syncAuth)
+      window.removeEventListener('storage', syncAuth)
+    }
+  }, [])
+
+  return isAuthenticated
+}
+
+function TopBar({ isAuthenticated }: { isAuthenticated: boolean }) {
+  const items = topBar.map((item) =>
+    item.href === '/login' && isAuthenticated
+      ? { label: 'Dashboard RR. HH.', href: '/dashboard' }
+      : item,
+  )
+
   return (
     <nav className="hidden lg:block">
       <ul className="flex justify-end text-[14px] text-brand-ink">
-        {topBar.map((item, i) => (
-          <li key={item.label} className={i === topBar.length - 1 ? 'pr-0' : ''}>
+        {items.map((item, i) => (
+          <li key={item.label} className={i === items.length - 1 ? 'pr-0' : ''}>
             <Link
               to={item.href}
               className="inline-block px-6 py-2.5 hover:underline"
@@ -100,8 +125,21 @@ function DesktopNav() {
   )
 }
 
-function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+function MobileMenu({
+  open,
+  onClose,
+  isAuthenticated,
+}: {
+  open: boolean
+  onClose: () => void
+  isAuthenticated: boolean
+}) {
   if (!open) return null
+  const items = topBar.map((item) =>
+    item.href === '/login' && isAuthenticated
+      ? { label: 'Dashboard RR. HH.', href: '/dashboard' }
+      : item,
+  )
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-brand-red text-white lg:hidden">
       <div className="flex items-center justify-between px-5 py-4">
@@ -137,7 +175,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
 
       <div className="px-5 pb-8">
         <div className="mb-3 flex flex-wrap gap-4 text-[14px]">
-          {topBar.map((item) => (
+          {items.map((item) => (
             <Link key={item.label} to={item.href} onClick={onClose}>
               {item.label}
             </Link>
@@ -154,6 +192,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
 export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const isAuthenticated = useIsAuthenticated()
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
@@ -172,7 +211,7 @@ export default function Header() {
 
         {/* Barra superior de accesos */}
         <div className="absolute right-0 top-0 z-[4] hidden max-w-[640px] w-full lg:block">
-          <TopBar />
+          <TopBar isAuthenticated={isAuthenticated} />
         </div>
 
         {/* Navegación + herramientas */}
@@ -215,7 +254,11 @@ export default function Header() {
         </button>
       </div>
 
-      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <MobileMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        isAuthenticated={isAuthenticated}
+      />
     </header>
   )
 }

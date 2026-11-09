@@ -4,6 +4,10 @@ import HomePage from './pages/HomePage'
 import JobVacanciesPage from './pages/JobVacanciesPage'
 import TalentTeamPage from './pages/TalentTeamPage'
 import PersonnelEntryFormPage from './pages/PersonnelEntryFormPage'
+import LoginPage from './pages/LoginPage'
+import DashboardPage from './pages/DashboardPage'
+import ApplicantDocumentsPage from './pages/ApplicantDocumentsPage'
+import HrDocumentsPage from './pages/HrDocumentsPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 
 export default function App() {
@@ -14,6 +18,13 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/es" element={<HomePage />} />
           <Route path="/en" element={<PlaceholderPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/postulante/documentos"
+            element={<ApplicantDocumentsPage />}
+          />
+          <Route path="/rrhh/documentos" element={<HrDocumentsPage />} />
           <Route
             path="/trabaja-con-nosotros/vacantes-de-trabajo"
             element={<JobVacanciesPage />}
