@@ -3,7 +3,7 @@
  * (Cloudflare Workers + D1 + R2).
  */
 
-const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
+const rawBaseUrl = import.meta.env.VITE_API_URL ?? ''
 export const API_BASE_URL = rawBaseUrl.trim().replace(/\/+$/, '')
 
 export function buildApiUrl(path: string): string {

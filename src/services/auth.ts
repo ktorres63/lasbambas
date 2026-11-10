@@ -67,7 +67,7 @@ export async function loginWithCredentials(
     })
   } catch {
     throw new Error(
-      'No se pudo conectar con el servidor de autenticación. Verifica que MineraBackend esté en ejecución.',
+      'No se pudo conectar con el servidor de autenticación. Verifica la URL del backend y tu conexión.',
     )
   }
 
