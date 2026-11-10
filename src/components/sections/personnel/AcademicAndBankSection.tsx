@@ -1,7 +1,7 @@
 import { useFormContext, useWatch } from 'react-hook-form'
 import type { PersonnelEntryValues } from '../../../schemas/personnelEntry'
 import { currentYear } from '../../../schemas/personnelEntry'
-import { bankOptions, yesNoOptions } from '../../../data/personnelEntry'
+import { bankOptions, notInformedOption, yesNoOptions } from '../../../data/personnelEntry'
 import FormSection, { FormSubsection } from '../../form/FormSection'
 import SelectField from '../../form/SelectField'
 import TextField from '../../form/TextField'
@@ -15,6 +15,10 @@ import { fieldGridClass } from '../../form/styles'
  * El documento original menciona nuevamente "Nacionalidad" en esta sección.
  * No se duplica el campo: la nacionalidad se registra una sola vez en la sección A.
  */
+
+/** La situación académica es opcional: se ofrece una opción explícita para no responder. */
+const studyingChoices = [...yesNoOptions, notInformedOption]
+
 export default function AcademicAndBankSection() {
   const {
     register,
@@ -52,7 +56,7 @@ export default function AcademicAndBankSection() {
             <RadioGroupField
               legend="¿Está cursando una carrera?"
               registration={register('isStudying')}
-              options={yesNoOptions}
+              options={studyingChoices}
               error={errors.isStudying?.message}
             />
             {isStudying === 'si' && (
@@ -86,12 +90,11 @@ export default function AcademicAndBankSection() {
 
         <FormSubsection
           title="Información bancaria"
-          description="Datos de la cuenta para el pago de remuneraciones y CTS."
+          description="Opcional. Datos de la cuenta para el pago de remuneraciones y CTS."
         >
           <div className={fieldGridClass}>
             <SelectField
               label="Banco de la cuenta actual"
-              required
               placeholder="Selecciona un banco"
               options={bankOptions}
               error={errors.bankName?.message}
@@ -99,29 +102,26 @@ export default function AcademicAndBankSection() {
             />
             <TextField
               label="Número de cuenta"
-              required
               type="text"
               inputMode="numeric"
               maxLength={20}
               autoComplete="off"
-              hint="Solo números, sin espacios ni guiones."
+              hint="Opcional. Solo números, sin espacios ni guiones."
               error={errors.bankAccount?.message}
               {...register('bankAccount')}
             />
             <TextField
               label="Código de cuenta interbancario (CCI)"
-              required
               type="text"
               inputMode="numeric"
               maxLength={20}
               autoComplete="off"
-              hint="20 dígitos."
+              hint="Opcional. 20 dígitos."
               error={errors.cci?.message}
               {...register('cci')}
             />
             <SelectField
               label="Banco para la cuenta CTS"
-              required
               placeholder="Selecciona un banco"
               options={bankOptions}
               error={errors.ctsBank?.message}

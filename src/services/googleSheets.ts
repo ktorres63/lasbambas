@@ -5,6 +5,8 @@ import {
   countryOptions,
   englishLevelOptions,
   maritalStatusOptions,
+  NOT_INFORMED_VALUE,
+  notInformedOption,
   pensionSystemOptions,
   yesNoOptions,
   type SelectOption,
@@ -41,6 +43,7 @@ const REQUEST_TIMEOUT_MS = 20_000
 /** Texto legible de una opción; si el código no existe se devuelve el valor tal cual. */
 function optionLabel(options: SelectOption[], value: string): string {
   if (!value) return ''
+  if (value === NOT_INFORMED_VALUE) return notInformedOption.label
   return options.find((option) => option.value === value)?.label ?? value
 }
 

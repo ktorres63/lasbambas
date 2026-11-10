@@ -129,7 +129,7 @@ export const personnelEntrySchema = z
     province: requiredText('La provincia es obligatoria.'),
     fixedPhone: optionalPhone,
     mobile: requiredPhone('El celular personal es obligatorio.'),
-    pensionSystem: requiredText('Selecciona el sistema previsional.'),
+    pensionSystem: z.string().trim(),
     afpCommission: z.string().trim(),
     maritalStatus: requiredText('Selecciona el estado civil.'),
     spouseName: z.string().trim(),
@@ -158,16 +158,23 @@ export const personnelEntrySchema = z
       .optional(),
     additionalInstitution: z.string().trim(),
 
-    bankName: requiredText('Selecciona el banco de la cuenta actual.'),
+    // Información bancaria: opcional, puede completarse más adelante.
+    bankName: z.string().trim(),
     bankAccount: z
       .string()
       .trim()
-      .regex(/^\d{6,20}$/, 'Ingresa un número de cuenta válido (de 6 a 20 dígitos).'),
+      .refine(
+        (value) => value === '' || /^\d{6,20}$/.test(value),
+        'Ingresa un número de cuenta válido (de 6 a 20 dígitos).',
+      ),
     cci: z
       .string()
       .trim()
-      .regex(/^\d{20}$/, 'El CCI debe contener exactamente 20 dígitos.'),
-    ctsBank: requiredText('Selecciona el banco para la cuenta CTS.'),
+      .refine(
+        (value) => value === '' || /^\d{20}$/.test(value),
+        'El CCI debe contener exactamente 20 dígitos.',
+      ),
+    ctsBank: z.string().trim(),
 
     // C. Satisfacción laboral
     satisfactionMost: z.string().trim(),

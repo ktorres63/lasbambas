@@ -6,6 +6,18 @@ export interface SelectOption {
   label: string
 }
 
+/** Valor usado cuando la persona prefiere no responder una pregunta opcional. */
+export const NOT_INFORMED_VALUE = 'prefiero-no-indicar'
+
+/** Opción común para los grupos de opciones que no son obligatorios. */
+export const notInformedOption: SelectOption = {
+  value: NOT_INFORMED_VALUE,
+  label: 'Prefiero no indicar',
+}
+
+/** Límite de las respuestas largas: Google Sheets admite 50 000 caracteres por celda. */
+export const LONG_ANSWER_MAX_LENGTH = 2000
+
 /** Códigos ISO 3166-1 alfa-2 usados para construir el selector de nacionalidades. */
 const countryCodes = [
   'AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW', 'AX',

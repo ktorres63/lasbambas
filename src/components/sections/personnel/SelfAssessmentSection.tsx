@@ -1,5 +1,6 @@
 import { useFormContext } from 'react-hook-form'
 import type { PersonnelEntryValues } from '../../../schemas/personnelEntry'
+import { LONG_ANSWER_MAX_LENGTH } from '../../../data/personnelEntry'
 import FormSection from '../../form/FormSection'
 import TextareaField from '../../form/TextareaField'
 
@@ -18,11 +19,13 @@ export default function SelfAssessmentSection() {
       <div className="space-y-5">
         <TextareaField
           label="¿Cuáles considera que son sus fortalezas?"
+          maxLength={LONG_ANSWER_MAX_LENGTH}
           error={errors.strengths?.message}
           {...register('strengths')}
         />
         <TextareaField
           label="¿Qué aspectos necesita desarrollar y qué está haciendo al respecto?"
+          maxLength={LONG_ANSWER_MAX_LENGTH}
           error={errors.developmentAreas?.message}
           {...register('developmentAreas')}
         />

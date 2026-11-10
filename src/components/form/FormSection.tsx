@@ -29,7 +29,11 @@ export default function FormSection({
           {letter}
         </span>
         <div className="min-w-0 pt-0.5">
-          <h2 id={headingId} className="text-[20px] font-black leading-6 text-brand-ink">
+          <h2
+            id={headingId}
+            tabIndex={-1}
+            className="text-[20px] font-black leading-6 text-brand-ink focus:outline-none"
+          >
             {title}
           </h2>
           {description && (
