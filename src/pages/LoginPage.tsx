@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
-  KeyRound,
   LoaderCircle,
   LockKeyhole,
   LogIn,
@@ -38,7 +37,6 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -65,12 +63,6 @@ export default function LoginPage() {
           : 'No se pudo iniciar sesión. Inténtalo nuevamente.',
       )
     }
-  }
-
-  const fillDemoRecruiter = () => {
-    setAuthError(null)
-    setValue('email', 'rrhh@lasbambas.com', { shouldValidate: true })
-    setValue('password', 'LasBambas2026!', { shouldValidate: true })
   }
 
   return (
@@ -223,25 +215,6 @@ export default function LoginPage() {
                 )}
                 {isSubmitting ? 'Verificando…' : 'Iniciar sesión'}
               </button>
-
-              <div className="border border-[#e4e4e4] bg-[#fafafa] p-3.5 text-[12px] leading-5 text-[#555]">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-1.5 font-bold text-brand-ink">
-                    <KeyRound aria-hidden="true" className="h-3.5 w-3.5 text-brand-red" />
-                    Acceso Reclutador RR. HH.
-                  </span>
-                  <button
-                    type="button"
-                    onClick={fillDemoRecruiter}
-                    className="text-[11px] font-bold uppercase tracking-[1px] text-brand-red underline hover:text-brand-red-dark"
-                  >
-                    Autocompletar
-                  </button>
-                </div>
-                <p className="mt-1 font-mono text-[11px] text-[#666]">
-                  rrhh@lasbambas.com · LasBambas2026!
-                </p>
-              </div>
             </form>
 
             <Link
