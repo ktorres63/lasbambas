@@ -7,7 +7,6 @@ import PersonnelEntryFormPage from './pages/PersonnelEntryFormPage'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ApplicantDocumentsPage from './pages/ApplicantDocumentsPage'
-import HrDocumentsPage from './pages/HrDocumentsPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 
 export default function App() {
@@ -24,7 +23,10 @@ export default function App() {
             path="/postulante/documentos"
             element={<ApplicantDocumentsPage />}
           />
-          <Route path="/rrhh/documentos" element={<HrDocumentsPage />} />
+          <Route
+            path="/rrhh/documentos"
+            element={<Navigate to="/dashboard" replace />}
+          />
           <Route
             path="/trabaja-con-nosotros/vacantes-de-trabajo"
             element={<JobVacanciesPage />}

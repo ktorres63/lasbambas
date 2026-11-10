@@ -822,8 +822,13 @@ export default function DashboardPage() {
                       {isExpanded && (
                         <ul className="mt-3 space-y-2 border-t border-[#eee] pt-3">
                           {applicant.documents.map((doc) => {
+                            const separator = doc.downloadPath?.includes('?')
+                              ? '&'
+                              : '?'
                             const href = doc.downloadPath
-                              ? buildApiUrl(`${doc.downloadPath}?inline=true`)
+                              ? buildApiUrl(
+                                  `${doc.downloadPath}${separator}inline=true`,
+                                )
                               : buildApiUrl(
                                   `/api/documents/${encodeURIComponent(doc.id)}/download?inline=true`,
                                 )

@@ -3,6 +3,8 @@
  * (Cloudflare Workers + D1 + R2).
  */
 
+import { clearStoredSession, getAuthHeaders } from './auth'
+
 const rawBaseUrl = import.meta.env.VITE_API_URL ?? ''
 export const API_BASE_URL = rawBaseUrl.trim().replace(/\/+$/, '')
 
@@ -194,8 +196,16 @@ export async function getStoredApplicant(
 export async function listStoredApplicants(): Promise<StoredApplicant[]> {
   const response = await fetch(buildApiUrl('/api/applicants'), {
     method: 'GET',
-    headers: { Accept: 'application/json' },
+    headers: {
+      Accept: 'application/json',
+      ...getAuthHeaders(),
+    },
   })
+
+  if (response.status === 401) {
+    clearStoredSession()
+    throw new Error('Tu sesión ha expirado. Vuelve a iniciar sesión.')
+  }
 
   if (!response.ok) {
     throw new Error(
@@ -225,7 +235,8 @@ export async function saveStoredApplicant(
   applicant: StoredApplicant,
 ): Promise<void> {
   const normalizedDni = applicant.dni.trim()
-  const existing = await getStoredApplicant(normalizedDni)
+  const allApplicants = await listStoredApplicants()
+  const existing = allApplicants.find((item) => item.dni === normalizedDni)
   const previousDocIds =
     existing?.documents
       .map((doc) => doc.backendDocumentId ?? doc.id)
@@ -234,6 +245,7 @@ export async function saveStoredApplicant(
   const uploadedDocIds: string[] = []
   const fullName =
     applicant.fullName.trim() || `Postulante DNI ${normalizedDni}`
+  const authHeaders = getAuthHeaders()
 
   try {
     for (const doc of applicant.documents) {
@@ -252,13 +264,18 @@ export async function saveStoredApplicant(
       formData.append('dni', normalizedDni)
       formData.append('fullName', fullName)
       formData.append('documentType', doc.id)
-      formData.append('uploadedBy', 'rrhh-web')
       formData.append('file', normalizedFile, doc.fileName)
 
       const response = await fetch(buildApiUrl('/api/recruiter/documents'), {
         method: 'POST',
+        headers: authHeaders,
         body: formData,
       })
+
+      if (response.status === 401) {
+        clearStoredSession()
+        throw new Error('Tu sesión ha expirado. Vuelve a iniciar sesión.')
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -282,6 +299,7 @@ export async function saveStoredApplicant(
       uploadedDocIds.map((id) =>
         fetch(buildApiUrl(`/api/documents/${encodeURIComponent(id)}`), {
           method: 'DELETE',
+          headers: authHeaders,
         }),
       ),
     )
@@ -294,6 +312,7 @@ export async function saveStoredApplicant(
       previousDocIds.map((id) =>
         fetch(buildApiUrl(`/api/documents/${encodeURIComponent(id)}`), {
           method: 'DELETE',
+          headers: authHeaders,
         }),
       ),
     )
@@ -305,19 +324,27 @@ export async function saveStoredApplicant(
  */
 export async function deleteStoredApplicant(dni: string): Promise<void> {
   const normalizedDni = dni.trim()
-  const existing = await getStoredApplicant(normalizedDni)
+  const allApplicants = await listStoredApplicants()
+  const existing = allApplicants.find((item) => item.dni === normalizedDni)
   if (!existing || existing.documents.length === 0) {
     return
   }
 
+  const authHeaders = getAuthHeaders()
   const responses = await Promise.all(
     existing.documents.map((doc) => {
       const docId = doc.backendDocumentId ?? doc.id
       return fetch(buildApiUrl(`/api/documents/${encodeURIComponent(docId)}`), {
         method: 'DELETE',
+        headers: authHeaders,
       })
     }),
   )
+
+  if (responses.some((res) => res.status === 401)) {
+    clearStoredSession()
+    throw new Error('Tu sesión ha expirado. Vuelve a iniciar sesión.')
+  }
 
   const failed = responses.find((res) => !res.ok && res.status !== 404)
   if (failed) {
