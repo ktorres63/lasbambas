@@ -3,6 +3,7 @@ import type { TextareaHTMLAttributes } from 'react'
 import FieldWrapper from './FieldWrapper'
 import { getDescribedBy } from './fieldA11y'
 import { textareaClass } from './styles'
+import { collapseWhitespace } from '../../utils/text'
 
 export interface TextareaFieldProps
   extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'id' | 'className'> {
@@ -23,6 +24,8 @@ export default function TextareaField({
   textareaClassName = '',
   required = false,
   maxLength,
+  onChange,
+  onKeyDown,
   ...textareaProps
 }: TextareaFieldProps) {
   const generatedId = useId()
@@ -47,9 +50,20 @@ export default function TextareaField({
         maxLength={maxLength}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault()
+            return
+          }
+          onKeyDown?.(event)
+        }}
         onChange={(event) => {
-          setLength(event.target.value.length)
-          textareaProps.onChange?.(event)
+          const normalized = collapseWhitespace(event.currentTarget.value)
+          if (normalized !== event.currentTarget.value) {
+            event.currentTarget.value = normalized
+          }
+          setLength(normalized.length)
+          onChange?.(event)
         }}
         className={`${textareaClass} ${textareaClassName}`}
       />

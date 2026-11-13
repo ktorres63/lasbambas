@@ -12,6 +12,7 @@ import {
   type SelectOption,
 } from '../data/personnelEntry'
 import type { PersonnelEntryValues } from '../schemas/personnelEntry'
+import { collapseWhitespace } from '../utils/text'
 
 /** Valor admitido en una columna de la hoja de cálculo. */
 export type SheetValue = string | number
@@ -116,7 +117,7 @@ function formatPreviousCompanies(
  * El orden de las claves es el orden de las columnas en la hoja.
  */
 export function buildSheetPayload(values: PersonnelEntryValues): SheetPayload {
-  return {
+  const payload: SheetPayload = {
     'ID de envío': createSubmissionId(),
     'Fecha de envío': timestamp(),
 
@@ -181,6 +182,13 @@ export function buildSheetPayload(values: PersonnelEntryValues): SheetPayload {
     Disponibilidad: optionLabel(availabilityOptions, values.availability),
     'Disponible desde': values.availableFrom,
   }
+
+  return Object.fromEntries(
+    Object.entries(payload).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? collapseWhitespace(value).trim() : value,
+    ]),
+  ) as SheetPayload
 }
 
 /**

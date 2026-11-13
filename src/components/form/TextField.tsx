@@ -3,6 +3,7 @@ import type { InputHTMLAttributes } from 'react'
 import FieldWrapper from './FieldWrapper'
 import { getDescribedBy } from './fieldA11y'
 import { inputClass } from './styles'
+import { collapseWhitespace } from '../../utils/text'
 
 export interface TextFieldProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'className'> {
@@ -26,6 +27,7 @@ export default function TextField({
   wrapClassName,
   inputClassName = '',
   required = false,
+  onChange,
   ...inputProps
 }: TextFieldProps) {
   const generatedId = useId()
@@ -56,6 +58,13 @@ export default function TextField({
           required={required}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
+          onChange={(event) => {
+            const normalized = collapseWhitespace(event.currentTarget.value)
+            if (normalized !== event.currentTarget.value) {
+              event.currentTarget.value = normalized
+            }
+            onChange?.(event)
+          }}
           className={`${inputClass} ${prefix ? 'pl-10' : ''} ${inputClassName}`}
         />
       </div>
