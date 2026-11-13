@@ -82,23 +82,23 @@ export const mainNav: NavSection[] = [
       },
     ],
   },
-  {
-    id: 'innovacion',
-    title: 'Innovación',
-    href: '/innovacion',
-    children: [
-      {
-        label: 'Camino a una',
-        strong: 'Mina Inteligente',
-        href: '/innovacion/camino-a-una-mina-inteligente',
-      },
-      {
-        label: 'Programa de',
-        strong: 'Transformación Digital en Minería',
-        href: '/innovacion/programa-de-transformacion-digital-en-mineria',
-      },
-    ],
-  },
+  // {
+  //   id: 'innovacion',
+  //   title: 'Innovación',
+  //   href: '/innovacion',
+  //   children: [
+  //     {
+  //       label: 'Camino a una',
+  //       strong: 'Mina Inteligente',
+  //       href: '/innovacion/camino-a-una-mina-inteligente',
+  //     },
+  //     {
+  //       label: 'Programa de',
+  //       strong: 'Transformación Digital en Minería',
+  //       href: '/innovacion/programa-de-transformacion-digital-en-mineria',
+  //     },
+  //   ],
+  // },
   {
     id: 'noticias',
     title: 'Noticias y',
@@ -125,7 +125,11 @@ export const mainNav: NavSection[] = [
     titleStrong: 'Nosotros',
     href: '/trabaja-con-nosotros',
     children: [
-      // { label: 'DESCuBRE', href: '/trabaja-con-nosotros/descubre' },
+      {
+        label: 'Consulta de ',
+        strong: 'documentos',
+        href: '/postulante/documentos',
+      },
       {
         label: 'Vacantes de',
         strong: 'Trabajo',
