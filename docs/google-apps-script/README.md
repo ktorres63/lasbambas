@@ -78,6 +78,11 @@ VITE_GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/AKfy.../exec
   etiqueta legible (`AFP`, `Banco de Crédito del Perú (BCP)`, `Sí`).
 - **Listas**: hijos, contactos de emergencia y empresas anteriores se guardan en
   una sola celda separada por ` | `.
+- **Columnas heredadas**: `ID` y `Fecha de registro` se reutilizan como
+  `ID de envío` y `Fecha de envío`; si ya existen las columnas nuevas, las
+  antiguas vacías se eliminan para evitar duplicados.
+- **Saltos de línea**: el formulario y el script convierten saltos de línea,
+  tabulaciones y espacios repetidos en un solo espacio antes de guardar.
 
 ## Limitaciones conocidas
 
