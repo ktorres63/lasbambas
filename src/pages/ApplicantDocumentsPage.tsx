@@ -286,7 +286,11 @@ export default function ApplicantDocumentsPage() {
                     Documentos disponibles
                   </h2>
                   <p className="mt-2 text-[13px] text-[#666]">
-                    {result.documents.length} documentos encontrados para el DNI{' '}
+                    {result.documents.length}{' '}
+                    {result.documents.length === 1
+                      ? 'documento encontrado'
+                      : 'documentos encontrados'}{' '}
+                    para el DNI{' '}
                     <strong className="font-bold text-brand-ink">{result.dni}</strong>.
                   </p>
                 </div>

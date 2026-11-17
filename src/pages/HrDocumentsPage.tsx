@@ -22,6 +22,7 @@ import {
 import { REQUIRED_APPLICANT_DOCUMENTS } from '../services/applicantDocuments'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
+const REQUIRED_DOCUMENT_INDEX = 0
 const EMPTY_FILES: (File | null)[] = REQUIRED_APPLICANT_DOCUMENTS.map(() => null)
 
 function formatFileSize(bytes: number): string {
@@ -150,8 +151,11 @@ export default function HrDocumentsPage() {
       invalid = true
     }
 
-    if (files.some((file) => file === null)) {
-      setFilesError('Debes adjuntar los cuatro documentos PDF.')
+    if (!files[REQUIRED_DOCUMENT_INDEX]) {
+      setFilesError(
+        `Adjunta el documento obligatorio: ${REQUIRED_APPLICANT_DOCUMENTS[REQUIRED_DOCUMENT_INDEX].title}.`,
+      )
+      firstInvalidInput ??= fileInputRefs.current[REQUIRED_DOCUMENT_INDEX]
       invalid = true
     }
 
@@ -160,6 +164,22 @@ export default function HrDocumentsPage() {
       return
     }
 
+    const documentsToSave = REQUIRED_APPLICANT_DOCUMENTS.flatMap(
+      (requirement, index) => {
+        const file = files[index]
+        if (!file) return []
+
+        return [
+          {
+            ...requirement,
+            fileName: file.name,
+            mimeType: file.type || 'application/pdf',
+            blob: file,
+          },
+        ]
+      },
+    )
+
     setIsSaving(true)
 
     try {
@@ -167,20 +187,16 @@ export default function HrDocumentsPage() {
         dni: normalizedDni,
         fullName: normalizedFullName,
         updatedAt: new Date().toISOString(),
-        documents: REQUIRED_APPLICANT_DOCUMENTS.map((requirement, index) => {
-          const file = files[index] as File
-          return {
-            ...requirement,
-            fileName: file.name,
-            mimeType: file.type || 'application/pdf',
-            blob: file,
-          }
-        }),
+        documents: documentsToSave,
       })
 
       setApplicants(await listStoredApplicants())
       setSuccessMessage(
-        `Los cuatro documentos de ${normalizedFullName} (DNI ${normalizedDni}) se guardaron correctamente.`,
+        `${documentsToSave.length} ${
+          documentsToSave.length === 1 ? 'documento' : 'documentos'
+        } de ${normalizedFullName} (DNI ${normalizedDni}) ${
+          documentsToSave.length === 1 ? 'se guardó' : 'se guardaron'
+        } correctamente.`,
       )
       clearForm()
     } catch (error) {
@@ -225,7 +241,7 @@ export default function HrDocumentsPage() {
               Gestión de <strong className="font-black">documentos</strong>
             </h1>
             <p className="mt-4 text-[15px] leading-[24px] text-[#555]">
-              Registra el nombre y DNI de un postulante, y asocia sus cuatro documentos
+              Registra el nombre y DNI de un postulante, y asocia uno o más documentos
               PDF para que pueda consultarlos.
             </p>
           </div>
@@ -255,8 +271,8 @@ export default function HrDocumentsPage() {
                   Asociar documentos
                 </h2>
                 <p className="mt-1 text-[13px] leading-5 text-[#666]">
-                  Ingresa el nombre y el DNI del postulante, luego adjunta los
-                  cuatro PDF solicitados.
+                  Ingresa el nombre y el DNI del postulante, luego adjunta al menos
+                  el documento obligatorio.
                 </p>
               </div>
             </div>
@@ -363,12 +379,14 @@ export default function HrDocumentsPage() {
                 Documentos PDF
               </legend>
               <p className="mt-2 text-[12px] leading-5 text-[#777]">
-                Los cuatro documentos son obligatorios. Máximo 5 MB por archivo.
+                El Documento 01 es obligatorio; los documentos 02 a 04 son opcionales.
+                Máximo 5 MB por archivo.
               </p>
 
               <ul className="mt-4 grid gap-3 sm:grid-cols-2">
                 {REQUIRED_APPLICANT_DOCUMENTS.map((requirement, index) => {
                   const file = files[index]
+                  const isRequired = index === REQUIRED_DOCUMENT_INDEX
 
                   return (
                     <li
@@ -380,9 +398,20 @@ export default function HrDocumentsPage() {
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-brand-red">
-                          Documento {String(index + 1).padStart(2, '0')}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-brand-red">
+                            Documento {String(index + 1).padStart(2, '0')}
+                          </span>
+                          <span
+                            className={`px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[1px] ${
+                              isRequired
+                                ? 'bg-brand-red text-white'
+                                : 'bg-[#ececec] text-[#777]'
+                            }`}
+                          >
+                            {isRequired ? 'Obligatorio' : 'Opcional'}
+                          </span>
+                        </div>
                         <FileText
                           aria-hidden="true"
                           className={`h-4 w-4 ${
@@ -408,6 +437,8 @@ export default function HrDocumentsPage() {
                           id={`hr-document-${index}`}
                           type="file"
                           accept="application/pdf,.pdf"
+                          required={isRequired}
+                          aria-required={isRequired}
                           onChange={(event) =>
                             onFileChange(index, event.target.files?.[0] ?? null)
                           }
@@ -541,7 +572,11 @@ export default function HrDocumentsPage() {
                           DNI {applicant.dni}
                         </p>
                         <p className="mt-1 text-[11px] text-[#777]">
-                          {applicant.documents.length} documentos ·{' '}
+                          {applicant.documents.length}{' '}
+                          {applicant.documents.length === 1
+                            ? 'documento'
+                            : 'documentos'}{' '}
+                          ·{' '}
                           {new Date(applicant.updatedAt).toLocaleString('es-PE', {
                             dateStyle: 'medium',
                             timeStyle: 'short',
@@ -559,9 +594,6 @@ export default function HrDocumentsPage() {
                       </button>
                     </div>
 
-                    <p className="mt-3 inline-block bg-[#f2f2f2] px-2 py-1 text-[10px] font-bold uppercase tracking-[1px] text-[#666]">
-                      {applicant.documents.length === 4 ? 'Completo' : 'Incompleto'}
-                    </p>
                   </li>
                 ))}
               </ul>
@@ -585,7 +617,7 @@ export default function HrDocumentsPage() {
             ¿Eliminar esta asociación?
           </h2>
           <p className="mt-3 text-[14px] leading-6 text-[#555]">
-            Se eliminarán los cuatro documentos de{' '}
+            Se eliminarán los documentos de{' '}
             <strong className="font-black">
               {applicantToDelete?.fullName ||
                 `el postulante con DNI ${applicantToDelete?.dni}`}

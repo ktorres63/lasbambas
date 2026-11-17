@@ -39,6 +39,7 @@ import {
 import { REQUIRED_APPLICANT_DOCUMENTS } from '../services/applicantDocuments'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
+const REQUIRED_DOCUMENT_INDEX = 0
 const EMPTY_FILES: (File | null)[] = REQUIRED_APPLICANT_DOCUMENTS.map(() => null)
 
 function formatFileSize(bytes: number): string {
@@ -208,12 +209,31 @@ export default function DashboardPage() {
       invalid = true
     }
 
-    if (files.some((file) => file === null)) {
-      setFilesError('Debes adjuntar los cuatro documentos PDF obligatorios.')
+    if (!files[REQUIRED_DOCUMENT_INDEX]) {
+      setFilesError(
+        `Adjunta el documento obligatorio: ${REQUIRED_APPLICANT_DOCUMENTS[REQUIRED_DOCUMENT_INDEX].title}.`,
+      )
+      if (!invalid) fileInputRefs.current[REQUIRED_DOCUMENT_INDEX]?.focus()
       invalid = true
     }
 
     if (invalid) return
+
+    const documentsToSave = REQUIRED_APPLICANT_DOCUMENTS.flatMap(
+      (requirement, index) => {
+        const file = files[index]
+        if (!file) return []
+
+        return [
+          {
+            ...requirement,
+            fileName: file.name,
+            mimeType: file.type || 'application/pdf',
+            blob: file,
+          },
+        ]
+      },
+    )
 
     setIsSaving(true)
 
@@ -222,22 +242,18 @@ export default function DashboardPage() {
         dni: normalizedDni,
         fullName: fullName.trim() || `Postulante DNI ${normalizedDni}`,
         updatedAt: new Date().toISOString(),
-        documents: REQUIRED_APPLICANT_DOCUMENTS.map((requirement, index) => {
-          const file = files[index] as File
-          return {
-            ...requirement,
-            fileName: file.name,
-            mimeType: file.type || 'application/pdf',
-            blob: file,
-          }
-        }),
+        documents: documentsToSave,
       })
 
       const updatedList = await listStoredApplicants()
       setApplicants(updatedList)
       setExpandedDni(normalizedDni)
       setSuccessMessage(
-        `Los cuatro documentos del DNI ${normalizedDni} se subieron y registraron correctamente en el servidor.`,
+        `${documentsToSave.length} ${
+          documentsToSave.length === 1 ? 'documento' : 'documentos'
+        } del DNI ${normalizedDni} ${
+          documentsToSave.length === 1 ? 'se subió' : 'se subieron'
+        } y ${documentsToSave.length === 1 ? 'registró' : 'registraron'} correctamente en el servidor.`,
       )
       clearForm()
     } catch (error) {
@@ -410,7 +426,7 @@ export default function DashboardPage() {
               {listLoading ? '—' : completeProfiles}
             </p>
             <p className="mt-2 text-[12px] text-[#666]">
-              Con los 4 documentos requeridos
+              Con los 4 documentos cargados
             </p>
           </div>
 
@@ -456,7 +472,8 @@ export default function DashboardPage() {
                     Asociar documentos a postulante
                   </h2>
                   <p className="mt-1 text-[13px] leading-5 text-[#666]">
-                    Ingresa los datos del postulante y sube sus 4 documentos PDF.
+                    Ingresa los datos del postulante y sube al menos el documento
+                    obligatorio.
                   </p>
                 </div>
               </div>
@@ -549,15 +566,17 @@ export default function DashboardPage() {
 
             <fieldset className="mt-8">
               <legend className="text-[12px] font-bold uppercase tracking-[1.5px] text-brand-ink">
-                Documentos PDF requeridos
+                Documentos PDF
               </legend>
               <p className="mt-2 text-[12px] leading-5 text-[#777]">
-                Los cuatro documentos son obligatorios. Máximo 10 MB por archivo.
+                El Documento 01 es obligatorio; los documentos 02 a 04 son opcionales.
+                Máximo 10 MB por archivo.
               </p>
 
               <ul className="mt-4 grid gap-3 sm:grid-cols-2">
                 {REQUIRED_APPLICANT_DOCUMENTS.map((requirement, index) => {
                   const file = files[index]
+                  const isRequired = index === REQUIRED_DOCUMENT_INDEX
 
                   return (
                     <li
@@ -569,9 +588,20 @@ export default function DashboardPage() {
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-brand-red">
-                          Documento {String(index + 1).padStart(2, '0')}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-brand-red">
+                            Documento {String(index + 1).padStart(2, '0')}
+                          </span>
+                          <span
+                            className={`px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[1px] ${
+                              isRequired
+                                ? 'bg-brand-red text-white'
+                                : 'bg-[#ececec] text-[#777]'
+                            }`}
+                          >
+                            {isRequired ? 'Obligatorio' : 'Opcional'}
+                          </span>
+                        </div>
                         <FileText
                           aria-hidden="true"
                           className={`h-4 w-4 ${
@@ -597,6 +627,8 @@ export default function DashboardPage() {
                           id={`dashboard-document-${index}`}
                           type="file"
                           accept="application/pdf,.pdf"
+                          required={isRequired}
+                          aria-required={isRequired}
                           onChange={(event) =>
                             onFileChange(index, event.target.files?.[0] ?? null)
                           }
@@ -764,12 +796,12 @@ export default function DashboardPage() {
                               className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-[1px] ${
                                 applicant.documents.length >= 4
                                   ? 'bg-[#e8f5e9] text-[#28632b]'
-                                  : 'bg-[#fff3e0] text-[#9a5b13]'
+                                  : 'bg-[#f2f2f2] text-[#555]'
                               }`}
                             >
                               {applicant.documents.length >= 4
                                 ? 'Completo'
-                                : `${applicant.documents.length}/4 PDF`}
+                                : `${applicant.documents.length} PDF`}
                             </span>
                           </div>
                           {applicant.fullName && (
