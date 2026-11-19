@@ -11,7 +11,6 @@ import {
   FileText,
   FolderOpen,
   LoaderCircle,
-  LogOut,
   RefreshCw,
   Save,
   Search,
@@ -23,7 +22,6 @@ import {
 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import {
-  clearStoredSession,
   getStoredSession,
   verifyCurrentSession,
   type AuthUser,
@@ -136,11 +134,6 @@ export default function DashboardPage() {
       active = false
     }
   }, [navigate])
-
-  const handleLogout = () => {
-    clearStoredSession()
-    navigate('/login', { replace: true })
-  }
 
   const clearForm = () => {
     setDni('')
@@ -372,14 +365,6 @@ export default function DashboardPage() {
               Actualizar
             </button>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex h-11 items-center gap-2 bg-brand-ink px-4 text-[12px] font-bold uppercase tracking-[1px] text-white transition-colors hover:bg-brand-red"
-            >
-              <LogOut aria-hidden="true" className="h-4 w-4" />
-              Cerrar sesión
-            </button>
           </div>
         </div>
 

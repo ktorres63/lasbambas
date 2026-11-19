@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
-import { Search, X } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
+import { LogOut, Search, X } from 'lucide-react'
 import { mainNav, topBar } from '../../data/navigation'
-import { AUTH_CHANGE_EVENT, getStoredSession } from '../../services/auth'
+import {
+  AUTH_CHANGE_EVENT,
+  clearStoredSession,
+  getStoredSession,
+} from '../../services/auth'
 
 function useIsAuthenticated(): boolean {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -22,7 +26,13 @@ function useIsAuthenticated(): boolean {
   return isAuthenticated
 }
 
-function TopBar({ isAuthenticated }: { isAuthenticated: boolean }) {
+function TopBar({
+  isAuthenticated,
+  onLogout,
+}: {
+  isAuthenticated: boolean
+  onLogout: () => void
+}) {
   const items = topBar.map((item) =>
     item.href === '/login' && isAuthenticated
       ? { label: 'Dashboard RR. HH.', href: '/dashboard' }
@@ -42,6 +52,18 @@ function TopBar({ isAuthenticated }: { isAuthenticated: boolean }) {
             </Link>
           </li>
         ))}
+        {isAuthenticated && (
+          <li>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="inline-flex items-center gap-1.5 px-6 py-2.5 text-brand-ink hover:text-brand-red hover:underline"
+            >
+              <LogOut aria-hidden="true" className="h-4 w-4" />
+              Cerrar sesión
+            </button>
+          </li>
+        )}
       </ul>
     </nav>
   )
@@ -129,10 +151,12 @@ function MobileMenu({
   open,
   onClose,
   isAuthenticated,
+  onLogout,
 }: {
   open: boolean
   onClose: () => void
   isAuthenticated: boolean
+  onLogout: () => void
 }) {
   if (!open) return null
   const items = topBar.map((item) =>
@@ -180,6 +204,16 @@ function MobileMenu({
               {item.label}
             </Link>
           ))}
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="inline-flex items-center gap-1.5 underline"
+            >
+              <LogOut aria-hidden="true" className="h-4 w-4" />
+              Cerrar sesión
+            </button>
+          )}
         </div>
         <Link to="/en" onClick={onClose} className="text-[14px] underline">
           EN
@@ -190,9 +224,16 @@ function MobileMenu({
 }
 
 export default function Header() {
+  const navigate = useNavigate()
   const [searchOpen, setSearchOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const isAuthenticated = useIsAuthenticated()
+
+  const handleLogout = () => {
+    clearStoredSession()
+    setMenuOpen(false)
+    navigate('/login', { replace: true })
+  }
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
@@ -211,7 +252,10 @@ export default function Header() {
 
         {/* Barra superior de accesos */}
         <div className="absolute right-0 top-0 z-[4] hidden max-w-[640px] w-full lg:block">
-          <TopBar isAuthenticated={isAuthenticated} />
+          <TopBar
+            isAuthenticated={isAuthenticated}
+            onLogout={handleLogout}
+          />
         </div>
 
         {/* Navegación + herramientas */}
@@ -258,6 +302,7 @@ export default function Header() {
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         isAuthenticated={isAuthenticated}
+        onLogout={handleLogout}
       />
     </header>
   )
