@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { LogOut, Search, X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { mainNav, topBar } from '../../data/navigation'
 import {
   AUTH_CHANGE_EVENT,
@@ -59,7 +59,6 @@ function TopBar({
               onClick={onLogout}
               className="inline-flex items-center gap-1.5 px-6 py-2.5 text-brand-ink hover:text-brand-red hover:underline"
             >
-              <LogOut aria-hidden="true" className="h-4 w-4" />
               Cerrar sesión
             </button>
           </li>
@@ -210,7 +209,6 @@ function MobileMenu({
               onClick={onLogout}
               className="inline-flex items-center gap-1.5 underline"
             >
-              <LogOut aria-hidden="true" className="h-4 w-4" />
               Cerrar sesión
             </button>
           )}

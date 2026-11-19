@@ -22,7 +22,6 @@ export interface TopBarLink {
 /** Barra superior de accesos directos */
 export const topBar: TopBarLink[] = [
   { label: 'Contáctenos', href: '/contactenos' },
-  { label: 'Proveedores', href: '/proveedores' },
   { label: 'Consultas y reclamos', href: '/consultas-y-reclamos' },
   { label: 'Línea ética', href: '/linea-etica' },
   { label: 'Iniciar sesión', href: '/login' },

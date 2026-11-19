@@ -29,7 +29,12 @@ type DniValues = z.infer<typeof dniSchema>
 type QueryResult =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'found'; dni: string; documents: ApplicantDocument[] }
+  | {
+      status: 'found'
+      dni: string
+      fullName: string
+      documents: ApplicantDocument[]
+    }
   | { status: 'not-found'; dni: string }
   | { status: 'error' }
 
@@ -101,10 +106,15 @@ export default function ApplicantDocumentsPage() {
     setResult({ status: 'loading' })
 
     try {
-      const documents = await getApplicantDocuments(dni)
+      const applicant = await getApplicantDocuments(dni)
       setResult(
-        documents
-          ? { status: 'found', dni, documents }
+        applicant
+          ? {
+              status: 'found',
+              dni,
+              fullName: applicant.fullName,
+              documents: applicant.documents,
+            }
           : { status: 'not-found', dni },
       )
     } catch {
@@ -282,16 +292,21 @@ export default function ApplicantDocumentsPage() {
                   <p className="mb-2 text-[12px] font-bold uppercase tracking-[2px] text-brand-red">
                     Consulta completada
                   </p>
-                  <h2 className="text-[24px] font-black leading-8 text-brand-ink">
+                  <p className="text-[13px] font-semibold text-[#666]">Postulante</p>
+                  <p className="mt-1 text-[20px] font-black leading-7 text-brand-ink">
+                    {result.fullName || 'Nombre no registrado'}
+                  </p>
+                  <p className="mt-1 text-[13px] text-[#555]">
+                    DNI <strong className="font-bold text-brand-ink">{result.dni}</strong>
+                  </p>
+                  <h2 className="mt-3 text-[24px] font-black leading-8 text-brand-ink">
                     Documentos disponibles
                   </h2>
                   <p className="mt-2 text-[13px] text-[#666]">
                     {result.documents.length}{' '}
                     {result.documents.length === 1
                       ? 'documento encontrado'
-                      : 'documentos encontrados'}{' '}
-                    para el DNI{' '}
-                    <strong className="font-bold text-brand-ink">{result.dni}</strong>.
+                      : 'documentos encontrados'}.
                   </p>
                 </div>
 

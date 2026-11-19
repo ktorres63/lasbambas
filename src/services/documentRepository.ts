@@ -99,15 +99,25 @@ const REQUIREMENT_METADATA: Record<
   },
 }
 
+function resolveDocumentTitle(doc: BackendDocumentMetadataDTO): string {
+  const meta = REQUIREMENT_METADATA[doc.documentType]
+  if (meta) return meta.title
+
+  const customTitle = doc.documentType?.replace(/\s+/g, ' ').trim()
+  if (customTitle && customTitle !== 'general') return customTitle
+
+  return doc.fileName
+}
+
 function mapBackendDocument(
   doc: BackendDocumentMetadataDTO,
 ): StoredApplicantDocument {
   const meta = REQUIREMENT_METADATA[doc.documentType]
   return {
     id: doc.id,
-    title: meta?.title ?? doc.fileName,
+    title: resolveDocumentTitle(doc),
     description:
-      meta?.description ?? `Documento registrado (${doc.documentType}).`,
+      meta?.description ?? 'Documento PDF registrado por Recursos Humanos.',
     fileName: doc.fileName,
     mimeType: doc.mimeType,
     backendDocumentId: doc.id,
@@ -263,7 +273,9 @@ export async function saveStoredApplicant(
       const formData = new FormData()
       formData.append('dni', normalizedDni)
       formData.append('fullName', fullName)
-      formData.append('documentType', doc.id)
+      // El nombre editable escrito por RR. HH. viaja como tipo de documento
+      // y es el título que verá el postulante al consultar su DNI.
+      formData.append('documentType', doc.title.trim() || doc.id)
       formData.append('file', normalizedFile, doc.fileName)
 
       const response = await fetch(buildApiUrl('/api/recruiter/documents'), {

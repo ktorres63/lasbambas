@@ -46,6 +46,25 @@ export const REQUIRED_APPLICANT_DOCUMENTS: ApplicantDocumentRequirement[] = [
   },
 ]
 
+/** Longitud máxima del nombre editable de un documento. */
+export const MAX_DOCUMENT_TITLE_LENGTH = 80
+
+/** Nombres por defecto de las cuatro casillas de carga. */
+export const DEFAULT_DOCUMENT_TITLES: string[] = REQUIRED_APPLICANT_DOCUMENTS.map(
+  (document) => document.title,
+)
+
+/**
+ * Limpia el nombre escrito por RR. HH. y aplica un valor por defecto si queda vacío.
+ */
+export function normalizeDocumentTitle(title: string, fallback: string): string {
+  const cleaned = title
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_DOCUMENT_TITLE_LENGTH)
+  return cleaned || fallback
+}
+
 function mapApplicantDocument(
   document: StoredApplicantDocument,
 ): ApplicantDocument {
@@ -86,7 +105,7 @@ function mapApplicantDocument(
  */
 export async function getApplicantDocuments(
   dni: string,
-): Promise<ApplicantDocument[] | null> {
+): Promise<{ fullName: string; documents: ApplicantDocument[] } | null> {
   const normalizedDni = dni.trim()
 
   const storedApplicant = await getStoredApplicant(normalizedDni)
@@ -94,5 +113,8 @@ export async function getApplicantDocuments(
     return null
   }
 
-  return storedApplicant.documents.map(mapApplicantDocument)
+  return {
+    fullName: storedApplicant.fullName,
+    documents: storedApplicant.documents.map(mapApplicantDocument),
+  }
 }

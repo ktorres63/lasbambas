@@ -7,7 +7,6 @@ import {
   ArrowUpRight,
   CheckCircle2,
   ExternalLink,
-  FileCheck2,
   FileText,
   FolderOpen,
   LoaderCircle,
@@ -34,7 +33,12 @@ import {
   saveStoredApplicant,
   type StoredApplicant,
 } from '../services/documentRepository'
-import { REQUIRED_APPLICANT_DOCUMENTS } from '../services/applicantDocuments'
+import {
+  DEFAULT_DOCUMENT_TITLES,
+  MAX_DOCUMENT_TITLE_LENGTH,
+  REQUIRED_APPLICANT_DOCUMENTS,
+  normalizeDocumentTitle,
+} from '../services/applicantDocuments'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const REQUIRED_DOCUMENT_INDEX = 0
@@ -58,6 +62,9 @@ export default function DashboardPage() {
   const [dni, setDni] = useState('')
   const [fullName, setFullName] = useState('')
   const [files, setFiles] = useState<(File | null)[]>(EMPTY_FILES)
+  const [documentTitles, setDocumentTitles] = useState<string[]>(() => [
+    ...DEFAULT_DOCUMENT_TITLES,
+  ])
   const [dniError, setDniError] = useState<string | null>(null)
   const [filesError, setFilesError] = useState<string | null>(null)
   const [generalError, setGeneralError] = useState<string | null>(null)
@@ -139,11 +146,20 @@ export default function DashboardPage() {
     setDni('')
     setFullName('')
     setFiles(EMPTY_FILES)
+    setDocumentTitles([...DEFAULT_DOCUMENT_TITLES])
     setDniError(null)
     setFilesError(null)
     fileInputRefs.current.forEach((input) => {
       if (input) input.value = ''
     })
+  }
+
+  const onTitleChange = (index: number, value: string) => {
+    setSuccessMessage(null)
+    setGeneralError(null)
+    setDocumentTitles((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? value : item)),
+    )
   }
 
   const onFileChange = (index: number, file: File | null) => {
@@ -204,9 +220,22 @@ export default function DashboardPage() {
 
     if (!files[REQUIRED_DOCUMENT_INDEX]) {
       setFilesError(
-        `Adjunta el documento obligatorio: ${REQUIRED_APPLICANT_DOCUMENTS[REQUIRED_DOCUMENT_INDEX].title}.`,
+        `Adjunta el documento obligatorio: ${
+          documentTitles[REQUIRED_DOCUMENT_INDEX] ||
+          REQUIRED_APPLICANT_DOCUMENTS[REQUIRED_DOCUMENT_INDEX].title
+        }.`,
       )
       if (!invalid) fileInputRefs.current[REQUIRED_DOCUMENT_INDEX]?.focus()
+      invalid = true
+    }
+
+    const missingTitleIndex = files.findIndex(
+      (file, index) => file && !documentTitles[index].trim(),
+    )
+    if (missingTitleIndex !== -1) {
+      setFilesError(
+        `Escribe un nombre para el Documento ${String(missingTitleIndex + 1).padStart(2, '0')}.`,
+      )
       invalid = true
     }
 
@@ -220,6 +249,10 @@ export default function DashboardPage() {
         return [
           {
             ...requirement,
+            title: normalizeDocumentTitle(
+              documentTitles[index],
+              requirement.title,
+            ),
             fileName: file.name,
             mimeType: file.type || 'application/pdf',
             blob: file,
@@ -285,6 +318,7 @@ export default function DashboardPage() {
   const selectApplicantForUpdate = (applicant: StoredApplicant) => {
     setDni(applicant.dni)
     setFullName(applicant.fullName ?? '')
+    setDocumentTitles([...DEFAULT_DOCUMENT_TITLES])
     setDniError(null)
     setSuccessMessage(null)
     dniInputRef.current?.focus()
@@ -306,12 +340,6 @@ export default function DashboardPage() {
         (sum, applicant) => sum + applicant.documents.length,
         0,
       ),
-    [applicants],
-  )
-
-  const completeProfiles = useMemo(
-    () =>
-      applicants.filter((applicant) => applicant.documents.length >= 4).length,
     [applicants],
   )
 
@@ -369,7 +397,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Tarjetas de métricas */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="border border-[#dedede] bg-white p-5 shadow-[0_6px_20px_rgba(35,31,32,0.04)]">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#777]">
@@ -397,21 +425,6 @@ export default function DashboardPage() {
             </p>
             <p className="mt-2 text-[12px] text-[#666]">
               Archivos PDF privados activos
-            </p>
-          </div>
-
-          <div className="border border-[#dedede] bg-white p-5 shadow-[0_6px_20px_rgba(35,31,32,0.04)]">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-[1.5px] text-[#777]">
-                Expedientes completos
-              </span>
-              <FileCheck2 aria-hidden="true" className="h-5 w-5 text-brand-red" />
-            </div>
-            <p className="mt-3 text-[34px] font-black leading-none text-brand-ink">
-              {listLoading ? '—' : completeProfiles}
-            </p>
-            <p className="mt-2 text-[12px] text-[#666]">
-              Con los 4 documentos cargados
             </p>
           </div>
 
@@ -554,7 +567,7 @@ export default function DashboardPage() {
                 Documentos PDF
               </legend>
               <p className="mt-2 text-[12px] leading-5 text-[#777]">
-                El Documento 01 es obligatorio; los documentos 02 a 04 son opcionales.
+                Adjunta los documentos requeridos en formato PDF.
                 Máximo 10 MB por archivo.
               </p>
 
@@ -595,9 +608,25 @@ export default function DashboardPage() {
                         />
                       </div>
 
-                      <p className="mt-3 min-h-10 text-[13px] font-bold leading-5 text-brand-ink">
-                        {requirement.title}
-                      </p>
+                      <div className="mt-3">
+                        <label
+                          htmlFor={`dashboard-document-title-${index}`}
+                          className="mb-1 block text-[10px] font-bold uppercase tracking-[1px] text-[#777]"
+                        >
+                          Nombre del documento
+                        </label>
+                        <input
+                          id={`dashboard-document-title-${index}`}
+                          type="text"
+                          maxLength={MAX_DOCUMENT_TITLE_LENGTH}
+                          value={documentTitles[index]}
+                          onChange={(event) =>
+                            onTitleChange(index, event.target.value)
+                          }
+                          placeholder={requirement.title}
+                          className="h-10 w-full border border-[#cfcfcf] bg-white px-3 text-[13px] font-semibold text-brand-ink outline-none transition-colors placeholder:font-normal placeholder:text-[#9a9a9a] focus:border-brand-red focus:ring-2 focus:ring-brand-red/15"
+                        />
+                      </div>
 
                       <label
                         htmlFor={`dashboard-document-${index}`}
@@ -632,7 +661,9 @@ export default function DashboardPage() {
                           <button
                             type="button"
                             onClick={() => removeFile(index)}
-                            aria-label={`Quitar ${requirement.title}`}
+                            aria-label={`Quitar ${
+                              documentTitles[index] || requirement.title
+                            }`}
                             className="flex h-7 w-7 shrink-0 items-center justify-center text-[#777] transition-colors hover:bg-brand-red hover:text-white"
                           >
                             <X aria-hidden="true" className="h-4 w-4" />
